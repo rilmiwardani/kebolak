@@ -289,7 +289,7 @@ const InstructionModal = ({ onClose }) => {
       content: (
         <div className="space-y-4">
           <p className="text-slate-300 text-sm leading-relaxed">
-            Susun kata mundur dari baris target di paling bawah.
+            Misi kamu adalah memecahkan teka-teki kata mundur! Isi kotak kosong dari atas ke bawah agar sesuai dengan warna petunjuk, hingga berujung pada Kata Target di baris paling bawah.
           </p>
           <div className="flex flex-col gap-1.5 items-center justify-center py-2">
             <div className="flex gap-1.5"><Tile status="empty" size="small"/><Tile status="empty" size="small"/><Tile status="empty" size="small"/><Tile status="empty" size="small"/><Tile status="empty" size="small"/></div>
@@ -300,37 +300,37 @@ const InstructionModal = ({ onClose }) => {
       )
     },
     {
-      title: "Warna Kotak",
+      title: "Arti Warna Kotak",
       content: (
         <div className="space-y-3">
           <p className="text-slate-300 text-sm">Petunjuk warna terhadap target akhir:</p>
           <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
             <Tile status="correct" size="small" />
-            <p className="text-slate-200 text-sm"><span className="text-emerald-400 font-bold">Tepat</span> posisinya.</p>
+            <p className="text-slate-200 text-sm"><span className="text-emerald-400 font-bold">Hijau:</span> Huruf sudah benar dan posisinya tepat.</p>
           </div>
           <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
             <Tile status="present" size="small" />
-            <p className="text-slate-200 text-sm"><span className="text-amber-400 font-bold">Ada</span> di kata, beda posisi.</p>
+            <p className="text-slate-200 text-sm"><span className="text-amber-400 font-bold">Kuning:</span> Huruf ada di kata, tapi posisinya salah.</p>
           </div>
           <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/5">
             <Tile status="absent" size="small" />
-            <p className="text-slate-200 text-sm"><span className="text-slate-400 font-bold">Tidak ada</span> di kata akhir.</p>
+            <p className="text-slate-200 text-sm"><span className="text-slate-400 font-bold">Abu-abu:</span> Huruf tidak ada di kata tersebut.</p>
           </div>
         </div>
       )
     },
     {
-      title: "Kata Baku",
+      title: "Kata Harus Baku",
       content: (
         <div className="space-y-4">
-          <p className="text-slate-300 text-sm">Setiap baris tebakan <strong>harus kata baku</strong>.</p>
+          <p className="text-slate-300 text-sm">Tebakanmu di setiap baris <strong>harus berupa kata asli</strong> (kata baku dalam bahasa Indonesia).</p>
           <div className="space-y-3">
             <div>
-              <p className="text-emerald-400 text-xs mb-1">✔ Benar</p>
+              <p className="text-emerald-400 text-xs mb-1">✔ Benar (Kata Asli)</p>
               <div className="flex gap-1.5 justify-center"><Tile letter="L" status="present" size="small"/><Tile letter="E" status="correct" size="small"/><Tile letter="V" status="absent" size="small"/><Tile letter="E" status="absent" size="small"/><Tile letter="L" status="present" size="small"/></div>
             </div>
             <div>
-              <p className="text-rose-400 text-xs mb-1">✖ Salah (Bukan Kata)</p>
+              <p className="text-rose-400 text-xs mb-1">✖ Salah (Bukan Kata / Asal Ketik)</p>
               <div className="flex gap-1.5 justify-center"><Tile letter="Y" status="absent" hasError size="small"/><Tile letter="E" status="correct" hasError size="small"/><Tile letter="E" status="absent" hasError size="small"/><Tile letter="E" status="absent" hasError size="small"/><Tile letter="T" status="absent" hasError size="small"/></div>
             </div>
           </div>
@@ -338,26 +338,26 @@ const InstructionModal = ({ onClose }) => {
       )
     },
     {
-      title: "Hard Mode",
+      title: "Aturan Hard Mode",
       content: (
         <div className="space-y-4">
           <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-            <p className="text-slate-300 text-sm mb-2"><strong className="text-amber-400">Wajib Dipakai:</strong><br/>Huruf Kuning/Hijau harus dipakai di baris bawahnya.</p>
+            <p className="text-slate-300 text-sm mb-2"><strong className="text-emerald-400">Wajib Dipakai:</strong><br/>Huruf <b>Kuning</b> dan <b>Hijau</b> dari baris atas <b>HARUS</b> kamu gunakan lagi di baris bawahnya.</p>
             <div className="flex gap-1.5 items-center justify-center"><Tile letter="E" status="present" size="small" /><div className="text-slate-400">→</div><Tile letter="E" status="correct" size="small" /></div>
           </div>
           <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-            <p className="text-slate-300 text-sm mb-2"><strong className="text-slate-400">Batas Maksimal:</strong><br/>Huruf Abu-abu membatasi jumlah penggunaan huruf itu.</p>
+            <p className="text-slate-300 text-sm mb-2"><strong className="text-slate-400">Dilarang Dipakai:</strong><br/>Huruf <b>Abu-abu</b> artinya salah, sehingga <b>TIDAK BOLEH</b> kamu gunakan lagi di baris bawahnya.</p>
             <div className="flex gap-1.5 items-center justify-center"><Tile letter="S" status="absent" size="small" /><div className="text-slate-400">→</div><Tile letter="S" status="absent" hasError size="small" /></div>
           </div>
         </div>
       )
     },
     {
-      title: "Tanda Error",
+      title: "Tanda Kesalahan",
       content: (
         <div className="space-y-4 text-center">
           <p className="text-slate-300 text-sm">
-            Segitiga <strong className="text-rose-400">merah</strong> menandakan langkah tidak valid. Klik untuk melihat alasan.
+            Melihat segitiga <strong className="text-rose-400">merah</strong> di pojok kotak? Itu artinya ada aturan yang dilanggar. <br/><br/><strong>Klik kotak tersebut</strong> untuk membaca alasan kesalahannya!
           </p>
           <div className="flex gap-1.5 justify-center py-2">
               <Tile letter="S" status="absent" size="small" />
