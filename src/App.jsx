@@ -387,7 +387,8 @@ const InstructionModal = ({ onClose }) => {
           </button>
         </div>
         
-        <div className="p-5 overflow-y-auto flex-1 flex flex-col justify-center min-h-[220px]">
+        {/* Added custom hide scrollbar classes to modal content as well */}
+        <div className="p-5 overflow-y-auto flex-1 flex flex-col justify-center min-h-[220px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {steps[currentStep].content}
         </div>
 
@@ -442,7 +443,8 @@ const Confetti = () => {
   }), []);
 
   return (
-    <div className="absolute top-1/2 left-1/2 pointer-events-none z-[100]">
+    // Fixed container detached from scroll flow
+    <div className="fixed top-1/2 left-1/2 pointer-events-none z-[100]">
       <style>{`
         @keyframes confetti-burst {
           0% {
@@ -775,8 +777,8 @@ export default function App() {
       {/* Pemisah Estetik */}
       <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-white/15 to-transparent mb-2 z-10 shrink-0"></div>
 
-      {/* Kontainer Utama Area Permainan (Grid + Keyboard) */}
-      <div className="w-full flex flex-col items-center flex-1 z-10 justify-start pb-2 sm:pb-4 overflow-y-auto">
+      {/* Kontainer Utama Area Permainan (Grid + Keyboard) - Ditambahkan utility hide scrollbar */}
+      <div className="w-full flex flex-col items-center flex-1 z-10 justify-start pb-2 sm:pb-4 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
         <main className="w-full max-w-[340px] sm:max-w-[380px] flex flex-col items-center mt-0 sm:mt-2 shrink-0">
           
