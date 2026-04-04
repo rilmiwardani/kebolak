@@ -258,7 +258,6 @@ function getValidLevel(isHardMode = false) {
 
 // --- KOMPONEN KOTAK (TILE) - 2026 SPATIAL UPGRADE ---
 const Tile = ({ letter, status, hasError, isActive, onClick, onShowError, size = 'normal' }) => {
-  // Ditambahkan ring-inset dan gradient untuk kedalaman taktil ala Spatial UI 2026
   const statusClasses = {
     empty: "bg-white/[0.03] ring-1 ring-inset ring-white/10 text-white shadow-[inset_0_4px_20px_rgba(255,255,255,0.02)]",
     correct: "bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]",
@@ -268,7 +267,6 @@ const Tile = ({ letter, status, hasError, isActive, onClick, onShowError, size =
 
   const sizeClasses = {
     small: "w-8 h-8 md:w-10 md:h-10 text-lg md:text-xl rounded-xl",
-    // Sudut dibulatkan lebih ekstrim (squircle)
     normal: "w-full aspect-square text-2xl sm:text-3xl md:text-4xl rounded-2xl"
   };
 
@@ -391,10 +389,9 @@ const InstructionModal = ({ onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
       onClick={onClose}
     >
-      {/* 2026 Upgrade: Modal menggunakan ring-inset dan background yang sangat dalam */}
       <div 
         className="w-full max-w-sm bg-[#050505]/90 backdrop-blur-3xl ring-1 ring-inset ring-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
@@ -438,8 +435,8 @@ const InstructionModal = ({ onClose }) => {
   );
 };
 
-// --- KOMPONEN CONFETTI ---
-const Confetti = () => {
+// --- KOMPONEN CONFETTI (Dibungkus React.memo agar tidak me-render ulang) ---
+const Confetti = React.memo(() => {
   const colors = ['#10b981', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#ec4899'];
   const pieces = useMemo(() => Array.from({ length: 75 }).map((_, i) => {
     const spread = Math.random() * 500 - 250; 
@@ -462,24 +459,6 @@ const Confetti = () => {
 
   return (
     <div className="fixed top-1/2 left-1/2 pointer-events-none z-[100]">
-      <style>{`
-        @keyframes confetti-burst {
-          0% {
-            transform: translate3d(0, 0, 0) rotate(0deg) scale(0);
-            opacity: 1;
-            animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); 
-          }
-          30% {
-            transform: translate3d(var(--tx), var(--ty), 0) rotate(180deg) scale(1.2);
-            opacity: 1;
-            animation-timing-function: cubic-bezier(0.55, 0.085, 0.68, 0.53); 
-          }
-          100% {
-            transform: translate3d(var(--fx), 80vh, 0) rotate(var(--r)) scale(1);
-            opacity: 0;
-          }
-        }
-      `}</style>
       {pieces.map(p => (
         <div
           key={p.id}
@@ -499,7 +478,7 @@ const Confetti = () => {
       ))}
     </div>
   );
-};
+});
 
 // --- KOMPONEN UTAMA (APP) ---
 export default function App() {
@@ -727,9 +706,28 @@ export default function App() {
   }
 
   return (
-    // 2026 Background Upgrade: Latar belakang sangat gelap (#050505) agar warna neon/kaca lebih mencolok
     <div className="h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-start pt-3 pb-8 sm:pt-5 sm:pb-10 px-2 sm:px-4 font-sans relative overflow-hidden select-none">
       
+      {/* Memisahkan tag Style global agar tidak di-re-render dan mengulang animasi */}
+      <style>{`
+        @keyframes confetti-burst {
+          0% {
+            transform: translate3d(0, 0, 0) rotate(0deg) scale(0);
+            opacity: 1;
+            animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+          }
+          30% {
+            transform: translate3d(var(--tx), var(--ty), 0) rotate(180deg) scale(1.2);
+            opacity: 1;
+            animation-timing-function: cubic-bezier(0.55, 0.085, 0.68, 0.53); 
+          }
+          100% {
+            transform: translate3d(var(--fx), 80vh, 0) rotate(var(--r)) scale(1);
+            opacity: 0;
+          }
+        }
+      `}</style>
+
       {/* Background Orbs yang lebih dinamis dan imersif */}
       <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/15 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[-15%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
@@ -811,7 +809,6 @@ export default function App() {
             </span>
           </div>
 
-          {/* 2026 Spatial UI: Bento box grid container */}
           <div className="flex flex-col w-full gap-1.5 sm:gap-2 p-3 sm:p-5 md:p-6 bg-white/[0.01] backdrop-blur-3xl ring-1 ring-inset ring-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative">
 
             {grid.map((row, r) => (
@@ -821,7 +818,7 @@ export default function App() {
                     key={`${r}-${c}`}
                     letter={letter}
                     status={puzzle.colors[r][c]}
-                    isActive={activeCell.r === r && activeCell.c === c}
+                    isActive={gameState !== 'won' && activeCell.r === r && activeCell.c === c}
                     hasError={!!errors[r][c]}
                     onClick={() => setActiveCell({ r, c })}
                     onShowError={() => showToast(errors[r][c])}
@@ -832,7 +829,6 @@ export default function App() {
 
             <div className="w-full h-px bg-white/10 my-1"></div>
 
-            {/* Locked target word */}
             <div className="flex w-full gap-1.5 sm:gap-2 opacity-95">
               {puzzle.target.split('').map((letter, i) => (
                 <div key={i} className="w-full aspect-square flex items-center justify-center font-bold text-2xl sm:text-3xl md:text-4xl uppercase rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 ring-1 ring-inset ring-white/40 text-white shadow-[0_8px_30px_rgba(16,185,129,0.3)] pointer-events-none">
@@ -862,12 +858,13 @@ export default function App() {
 
         </main>
 
+        {/* Dihapus class 'animate-in' yang memicu kedipan saat komponen re-render akibat Alternatif Jawaban */}
         {gameState === 'won' ? (
-          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-2 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
+          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-2 sm:gap-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
             
             <div className="relative flex items-center justify-center mt-2 mb-2">
-              <Confetti />
-              <div className="relative z-10 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 p-4 rounded-full ring-1 ring-inset ring-emerald-500/30 animate-in zoom-in duration-500">
+              <Confetti key={progress.current} />
+              <div className="relative z-10 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 p-4 rounded-full ring-1 ring-inset ring-emerald-500/30">
                 <Trophy className="w-12 h-12 md:w-14 md:h-14 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]" />
               </div>
             </div>
@@ -899,7 +896,6 @@ export default function App() {
                   const isAction = key === 'ENTER' || key === 'BACKSPACE';
                   const status = keyStatuses[key];
                   
-                  // 2026 Spatial Keyboard UI
                   let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-md backdrop-blur-md';
                   if (status === 'correct') keyStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:brightness-110';
                   else if (status === 'present') keyStyle = 'bg-gradient-to-br from-amber-500 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:brightness-110';
