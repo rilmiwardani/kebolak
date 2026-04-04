@@ -42,7 +42,6 @@ function calculateWordleColors(guess, targetWord) {
   let targetChars = targetWord.split('');
   let guessChars = guess.split('');
 
-  // Pass 1: Hijau (Tepat)
   for (let i = 0; i < 5; i++) {
     if (guessChars[i] === targetChars[i]) {
       colors[i] = 'correct';
@@ -51,7 +50,6 @@ function calculateWordleColors(guess, targetWord) {
     }
   }
 
-  // Pass 2: Kuning (Salah Posisi)
   for (let i = 0; i < 5; i++) {
     if (guessChars[i] && targetChars.includes(guessChars[i])) {
       colors[i] = 'present';
@@ -69,7 +67,6 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
     const prevWord = prevWords[r - 1];
     const prevColors = prevColorsArray[r - 1];
 
-    // 1. Wajib menggunakan huruf Kuning/Hijau
     const requiredLetters = [];
     for (let c = 0; c < 5; c++) {
         if (prevColors[c] === 'present' || prevColors[c] === 'correct') {
@@ -85,7 +82,6 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
         }
     }
 
-    // 2. Batas huruf Abu-abu
     const wordChars = word.split('');
     for (let prevR = 0; prevR < r; prevR++) {
         const pWord = prevWords[prevR];
@@ -124,7 +120,6 @@ function generatePuzzleData(targetWord, rows = 3) {
     const path = [];
     const colors = [];
 
-    // 1. Hitung "Skor Kemiripan" semua kata terhadap kata target (Hijau=2, Kuning=1)
     const wordScores = {};
     for (let w of DICTIONARY) {
         const guessColors = calculateWordleColors(w, targetWord);
@@ -132,7 +127,6 @@ function generatePuzzleData(targetWord, rows = 3) {
         wordScores[w] = { score, guessColors };
     }
 
-    // 2. Buat target skor ideal untuk tiap baris (Baris atas skor rendah, baris bawah skor tinggi)
     const candidatesPerRow = [];
     for (let r = 0; r < rows; r++) {
         let idealScore = 0;
@@ -141,7 +135,6 @@ function generatePuzzleData(targetWord, rows = 3) {
         else if (rows === 4) idealScore = [1, 3, 5, 7][r];
         else if (rows === 5) idealScore = [0, 2, 4, 6, 8][r];
 
-        // Urutkan kamus: kata dengan skor yang paling mendekati 'idealScore' akan dicoba lebih dulu
         let candidates = shuffle([...DICTIONARY]);
         candidates.sort((a, b) => {
             let diffA = Math.abs(wordScores[a].score - idealScore);
@@ -151,7 +144,6 @@ function generatePuzzleData(targetWord, rows = 3) {
         candidatesPerRow.push(candidates);
     }
 
-    // Menggunakan Backtracking
     function backtrack(r) {
         if (foundPath || attempts > 2000) return; 
         if (r === rows) {
@@ -162,16 +154,14 @@ function generatePuzzleData(targetWord, rows = 3) {
         
         for (let word of candidatesPerRow[r]) {
             if (word === targetWord) continue;
-            if (path.includes(word)) continue; // Cegah kata sama
+            if (path.includes(word)) continue; 
             
             const { score, guessColors } = wordScores[word];
             
             if (r > 0) {
-                // ATURAN PROGRESIF: Baris ini harus punya skor petunjuk >= baris sebelumnya
                 const prevScore = wordScores[path[r-1]].score;
                 if (score < prevScore) continue;
 
-                // Cek Hard Mode
                 const hmCheck = checkHardModeValidity(word, path, colors);
                 if (!hmCheck.valid) continue;
             }
@@ -192,7 +182,6 @@ function generatePuzzleData(targetWord, rows = 3) {
     return null;
 }
 
-// Menemukan kata alternatif
 function findAlternativeWords(targetWord, colorsArray, seenPaths) {
     const rows = colorsArray.length;
     const targetColorsStr = colorsArray.map(c => c.join(','));
@@ -237,13 +226,12 @@ function findAlternativeWords(targetWord, colorsArray, seenPaths) {
     return foundPath;
 }
 
-// Mengambil kata target yang belum dimainkan
 function getValidLevel(isHardMode = false) {
    let played = getPlayedWords();
    let available = DICTIONARY.filter(w => !played.includes(w));
    
    if (available.length === 0) {
-      resetPlayedWords(); // Jika habis, ulang dari 0
+      resetPlayedWords(); 
       available = [...DICTIONARY];
       played = [];
    }
@@ -251,7 +239,6 @@ function getValidLevel(isHardMode = false) {
    let shuffledAvailable = shuffle([...available]);
    let targetRows = isHardMode ? 5 : 3;
 
-   // Mencoba level dengan baris target
    for (let target of shuffledAvailable) {
       for(let i=0; i < (isHardMode ? 15 : 5); i++) {
          let data = generatePuzzleData(target, targetRows);
@@ -259,7 +246,6 @@ function getValidLevel(isHardMode = false) {
       }
    }
    
-   // Fallback: Jika gagal menemukan rute panjang
    let fallbackRows = isHardMode ? 4 : 2;
    for (let target of shuffledAvailable) {
       let data = generatePuzzleData(target, fallbackRows);
@@ -270,25 +256,27 @@ function getValidLevel(isHardMode = false) {
 }
 
 
-// --- KOMPONEN KOTAK (TILE) ---
+// --- KOMPONEN KOTAK (TILE) - 2026 SPATIAL UPGRADE ---
 const Tile = ({ letter, status, hasError, isActive, onClick, onShowError, size = 'normal' }) => {
+  // Ditambahkan ring-inset dan gradient untuk kedalaman taktil ala Spatial UI 2026
   const statusClasses = {
-    empty: "bg-white/5 border-2 border-white/10 text-white",
-    correct: "bg-emerald-500 border-2 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]",
-    present: "bg-amber-500 border-2 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]",
-    absent: "bg-slate-700 border-2 border-slate-700 text-white/90",
+    empty: "bg-white/[0.03] ring-1 ring-inset ring-white/10 text-white shadow-[inset_0_4px_20px_rgba(255,255,255,0.02)]",
+    correct: "bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]",
+    present: "bg-gradient-to-br from-amber-400 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_20px_rgba(245,158,11,0.4)]",
+    absent: "bg-gradient-to-br from-slate-700 to-slate-800 ring-1 ring-inset ring-white/10 text-white/90",
   };
 
   const sizeClasses = {
-    small: "w-8 h-8 md:w-10 md:h-10 text-lg md:text-xl",
-    normal: "w-full aspect-square text-2xl sm:text-3xl md:text-4xl"
+    small: "w-8 h-8 md:w-10 md:h-10 text-lg md:text-xl rounded-xl",
+    // Sudut dibulatkan lebih ekstrim (squircle)
+    normal: "w-full aspect-square text-2xl sm:text-3xl md:text-4xl rounded-2xl"
   };
 
   return (
     <div 
       onClick={onClick}
       className={`
-        flex items-center justify-center font-bold uppercase rounded-xl transition-all duration-300 relative cursor-pointer
+        flex items-center justify-center font-bold uppercase transition-all duration-300 relative cursor-pointer
         ${sizeClasses[size]}
         ${statusClasses[status || 'empty']}
         ${isActive ? 'ring-4 ring-indigo-400/50 scale-105 z-10' : ''}
@@ -403,16 +391,17 @@ const InstructionModal = ({ onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
       onClick={onClose}
     >
+      {/* 2026 Upgrade: Modal menggunakan ring-inset dan background yang sangat dalam */}
       <div 
-        className="w-full max-w-sm bg-[#121217] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative max-h-[85vh]"
+        className="w-full max-w-sm bg-[#050505]/90 backdrop-blur-3xl ring-1 ring-inset ring-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
           <h2 className="text-lg font-bold text-white tracking-tight">{steps[currentStep].title}</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-slate-300 hover:text-white">
             <X size={20} />
           </button>
         </div>
@@ -421,7 +410,7 @@ const InstructionModal = ({ onClose }) => {
           {steps[currentStep].content}
         </div>
 
-        <div className="px-5 py-4 bg-black/20 border-t border-white/5 flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between shrink-0">
           <div className="flex gap-1.5">
             {steps.map((_, idx) => (
               <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentStep ? 'w-5 bg-indigo-500' : 'w-1.5 bg-white/20'}`} />
@@ -429,7 +418,7 @@ const InstructionModal = ({ onClose }) => {
           </div>
           <div className="flex items-center gap-2">
             {currentStep > 0 && (
-              <button onClick={() => setCurrentStep(p => p - 1)} className="p-2 rounded-full text-slate-300 hover:bg-white/10 transition-colors">
+              <button onClick={() => setCurrentStep(p => p - 1)} className="p-2 rounded-full text-slate-300 bg-white/5 hover:bg-white/10 transition-colors">
                 <ChevronLeft size={18} />
               </button>
             )}
@@ -520,24 +509,21 @@ export default function App() {
   const [grid, setGrid] = useState([]);
   const [errors, setErrors] = useState([]);
   const [activeCell, setActiveCell] = useState({ r: 0, c: 0 });
-  const [gameState, setGameState] = useState('loading'); // loading, playing, won
+  const [gameState, setGameState] = useState('loading');
   const [toastMsg, setToastMsg] = useState('');
   const [progress, setProgress] = useState({ current: 0, total: DICTIONARY.length });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Kalkulasi status warna untuk keyboard virtual
   const keyStatuses = useMemo(() => {
     if (!puzzle) return {};
     const statuses = {};
     
-    // 1. Warnai huruf sesuai kata target
     if (puzzle.target) {
       for (const char of puzzle.target) {
         statuses[char] = 'correct';
       }
     }
 
-    // 2. Tambahkan status abu-abu untuk huruf salah yang sudah ditebak
     for (let r = 0; r < puzzle.rows; r++) {
       for (let c = 0; c < 5; c++) {
         const letter = grid[r][c];
@@ -553,7 +539,6 @@ export default function App() {
     return statuses;
   }, [grid, puzzle]);
 
-  // Listener Fullscreen
   useEffect(() => {
     const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -572,7 +557,6 @@ export default function App() {
     }
   }, []);
 
-  // Fungsi Mulai Level Baru
   const startNextLevel = useCallback(() => {
     const newLvl = getValidLevel(isHardMode);
     setPuzzle(newLvl);
@@ -587,14 +571,12 @@ export default function App() {
      startNextLevel();
   }, [startNextLevel]);
 
-  // Fungsi Langsung Solve
   const handleSolve = useCallback(() => {
     if (!puzzle || !puzzle.words) return;
     setGrid(puzzle.words.map(w => w.split('')));
     setErrors(Array(puzzle.rows).fill('').map(() => Array(5).fill(null)));
   }, [puzzle]);
 
-  // Fungsi Mencari Rute Solusi Alternatif
   const handleAlternative = useCallback(() => {
     if (!puzzle) return;
     const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths);
@@ -603,7 +585,7 @@ export default function App() {
         setPuzzle(prev => ({ 
             ...prev, 
             words: newWords,
-            seenPaths: [...prev.seenPaths, newWords.join(',')] // Simpan kombinasi ini agar tak terulang
+            seenPaths: [...prev.seenPaths, newWords.join(',')]
         }));
         setGrid(newWords.map(w => w.split('')));
         setErrors(Array(puzzle.rows).fill('').map(() => Array(5).fill(null)));
@@ -612,7 +594,6 @@ export default function App() {
     }
   }, [puzzle]);
 
-  // Validasi Keseluruhan Grid
   const validateGrid = useCallback(() => {
     if (!puzzle) return;
 
@@ -631,7 +612,6 @@ export default function App() {
         isWin = false;
       }
 
-      // Cek Hijau Segera (Immediate Check)
       for (let c = 0; c < 5; c++) {
         if (rowChars[c] !== '' && puzzle.colors[r][c] === 'correct' && rowChars[c] !== puzzle.target[c]) {
           newErrors[r][c] = `Harus huruf '${puzzle.target[c]}' karena kotak ini hijau.`;
@@ -722,7 +702,6 @@ export default function App() {
     });
   }, [activeCell, gameState, puzzle]);
 
-  // Listener Keyboard Fisik
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Backspace') handleInput('BACKSPACE');
@@ -741,20 +720,20 @@ export default function App() {
 
   if (!puzzle) {
     return (
-      <div className="h-[100dvh] w-full bg-[#0a0a0c] flex items-center justify-center font-sans">
+      <div className="h-[100dvh] w-full bg-[#050505] flex items-center justify-center font-sans">
         <RefreshCw className="w-10 h-10 text-indigo-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-[100dvh] w-full bg-[#0a0a0c] flex flex-col items-center justify-start pt-3 pb-8 sm:pt-5 sm:pb-10 px-2 sm:px-4 font-sans relative overflow-hidden select-none">
+    // 2026 Background Upgrade: Latar belakang sangat gelap (#050505) agar warna neon/kaca lebih mencolok
+    <div className="h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-start pt-3 pb-8 sm:pt-5 sm:pb-10 px-2 sm:px-4 font-sans relative overflow-hidden select-none">
       
-      {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
-      <div className="absolute bottom-[20%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
+      {/* Background Orbs yang lebih dinamis dan imersif */}
+      <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/15 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
+      <div className="absolute bottom-[10%] right-[-15%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
 
-      {/* Header Estetik Minimalis */}
       <header className="w-full max-w-lg flex flex-shrink-0 items-center justify-between z-10 pb-2 sm:pb-3 mt-1 sm:mt-2">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
@@ -777,14 +756,14 @@ export default function App() {
           </p>
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-slate-300"
+            className="p-1.5 sm:p-2 bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/10 rounded-full transition-colors text-slate-300"
             title={isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}
           >
             {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
           </button>
           <button 
             onClick={() => setShowInstructions(true)}
-            className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-slate-300"
+            className="p-1.5 sm:p-2 bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/10 rounded-full transition-colors text-slate-300"
             title="Cara Bermain"
           >
             <Info size={18} />
@@ -794,7 +773,7 @@ export default function App() {
               setGrid(Array(puzzle.rows).fill('').map(() => Array(5).fill('')));
               setActiveCell({r:0, c:0});
             }}
-            className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-slate-300"
+            className="p-1.5 sm:p-2 bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/10 rounded-full transition-colors text-slate-300"
             title="Ulang Baris"
           >
             <RefreshCw size={18} />
@@ -802,42 +781,38 @@ export default function App() {
         </div>
       </header>
 
-      {/* Pemisah Estetik */}
       <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-white/15 to-transparent mb-2 z-10 shrink-0"></div>
 
-      {/* Kontainer Utama Area Permainan (Grid + Keyboard) */}
       <div className="w-full flex flex-col items-center flex-1 z-10 justify-start pb-2 sm:pb-4 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
         <main className="w-full max-w-[340px] sm:max-w-[380px] flex flex-col items-center mt-0 sm:mt-2 shrink-0">
           
-          {/* Toast Notifikasi */}
           <div className={`
-            absolute top-20 max-w-sm bg-rose-500/90 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl flex items-start gap-3 transition-all duration-300 z-50
+            absolute top-20 max-w-sm bg-rose-500/90 backdrop-blur-xl ring-1 ring-inset ring-white/20 text-white px-4 py-3 rounded-2xl shadow-xl flex items-start gap-3 transition-all duration-300 z-50
             ${toastMsg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}
           `}>
             <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <p className="text-sm font-medium">{toastMsg}</p>
           </div>
 
-          {/* Toggle Hard Mode */}
           <div className="flex items-center justify-center gap-3 mb-2 w-full">
             <span className={`text-xs sm:text-sm transition-colors ${!isHardMode ? 'text-emerald-400 font-bold' : 'text-slate-500'}`}>
               Normal
             </span>
             <button
               onClick={() => setIsHardMode(!isHardMode)}
-              className="w-12 h-6 sm:w-14 sm:h-7 rounded-full bg-white/5 relative transition-all focus:outline-none border border-white/10 hover:bg-white/10"
+              className="w-12 h-6 sm:w-14 sm:h-7 rounded-full bg-white/5 ring-1 ring-inset ring-white/10 relative transition-all focus:outline-none hover:bg-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]"
               title={isHardMode ? "Kembali ke Normal" : "Aktifkan Hard Mode"}
             >
-              <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full absolute top-1 sm:top-0.5 transition-all duration-300 shadow-sm ${isHardMode ? 'left-[26px] sm:left-[32px] bg-rose-400' : 'left-1 bg-emerald-400'}`}></div>
+              <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full absolute top-1 sm:top-0.5 transition-all duration-300 shadow-md ${isHardMode ? 'left-[26px] sm:left-[32px] bg-rose-400' : 'left-1 bg-emerald-400'}`}></div>
             </button>
             <span className={`text-xs sm:text-sm transition-colors ${isHardMode ? 'text-rose-400 font-bold' : 'text-slate-500'}`}>
               Hard Mode
             </span>
           </div>
 
-          {/* Grid Area */}
-          <div className="flex flex-col w-full gap-1.5 sm:gap-2 p-3 sm:p-5 md:p-6 bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl relative">
+          {/* 2026 Spatial UI: Bento box grid container */}
+          <div className="flex flex-col w-full gap-1.5 sm:gap-2 p-3 sm:p-5 md:p-6 bg-white/[0.01] backdrop-blur-3xl ring-1 ring-inset ring-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative">
 
             {grid.map((row, r) => (
               <div key={r} className="flex w-full gap-1.5 sm:gap-2">
@@ -855,20 +830,18 @@ export default function App() {
               </div>
             ))}
 
-            {/* Divider */}
             <div className="w-full h-px bg-white/10 my-1"></div>
 
-            {/* Target Word Row (Locked) */}
-            <div className="flex w-full gap-1.5 sm:gap-2 opacity-90">
+            {/* Locked target word */}
+            <div className="flex w-full gap-1.5 sm:gap-2 opacity-95">
               {puzzle.target.split('').map((letter, i) => (
-                <div key={i} className="w-full aspect-square flex items-center justify-center font-bold text-2xl sm:text-3xl md:text-4xl uppercase rounded-xl bg-emerald-500/80 text-white border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)] pointer-events-none">
+                <div key={i} className="w-full aspect-square flex items-center justify-center font-bold text-2xl sm:text-3xl md:text-4xl uppercase rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 ring-1 ring-inset ring-white/40 text-white shadow-[0_8px_30px_rgba(16,185,129,0.3)] pointer-events-none">
                   {letter}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Solve & New Puzzle Minimal Buttons */}
           {gameState !== 'won' && (
             <div className="flex items-center justify-center gap-6 mt-4 w-full max-w-sm">
               <button
@@ -889,13 +862,12 @@ export default function App() {
 
         </main>
 
-        {/* Conditional: Keyboard atau Win Screen Area */}
         {gameState === 'won' ? (
-          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-2 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 bg-white/5 p-4 sm:p-8 rounded-[2rem] border border-white/10 shadow-lg relative z-50 shrink-0">
+          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-2 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
             
             <div className="relative flex items-center justify-center mt-2 mb-2">
               <Confetti />
-              <div className="relative z-10 bg-emerald-500/20 p-4 rounded-full border border-emerald-500/30 animate-in zoom-in duration-500">
+              <div className="relative z-10 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 p-4 rounded-full ring-1 ring-inset ring-emerald-500/30 animate-in zoom-in duration-500">
                 <Trophy className="w-12 h-12 md:w-14 md:h-14 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]" />
               </div>
             </div>
@@ -907,13 +879,13 @@ export default function App() {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 w-full sm:w-auto z-10">
               <button 
                 onClick={handleAlternative}
-                className="px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-full transition-all active:scale-95 flex-1"
+                className="px-6 py-2.5 sm:py-3 bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-full transition-all active:scale-95 flex-1"
               >
                 Alternatif Jawaban
               </button>
               <button 
                 onClick={startNextLevel}
-                className="px-6 py-2.5 sm:py-3 bg-emerald-500 hover:bg-emerald-400 text-white text-xs sm:text-sm font-bold rounded-full shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)] transition-all active:scale-95 flex-1"
+                className="px-6 py-2.5 sm:py-3 bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 hover:brightness-110 text-white text-xs sm:text-sm font-bold rounded-full shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)] transition-all active:scale-95 flex-1"
               >
                 Main Lagi
               </button>
@@ -927,18 +899,19 @@ export default function App() {
                   const isAction = key === 'ENTER' || key === 'BACKSPACE';
                   const status = keyStatuses[key];
                   
-                  let keyStyle = 'bg-white/5 border border-white/5 hover:bg-white/15 text-slate-200 shadow-sm';
-                  if (status === 'correct') keyStyle = 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)] hover:bg-emerald-400';
-                  else if (status === 'present') keyStyle = 'bg-amber-500 border-amber-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)] hover:bg-amber-400';
-                  else if (status === 'absent') keyStyle = 'bg-slate-700 border-slate-700 text-white hover:bg-slate-600';
+                  // 2026 Spatial Keyboard UI
+                  let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-md backdrop-blur-md';
+                  if (status === 'correct') keyStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:brightness-110';
+                  else if (status === 'present') keyStyle = 'bg-gradient-to-br from-amber-500 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:brightness-110';
+                  else if (status === 'absent') keyStyle = 'bg-gradient-to-br from-slate-800 to-slate-900 ring-1 ring-inset ring-white/5 text-white/40 shadow-inner';
 
                   return (
                     <button
                       key={key}
                       onClick={() => handleInput(key)}
                       className={`
-                        flex items-center justify-center font-bold rounded-md sm:rounded-lg transition-all active:scale-95
-                        ${isAction ? 'flex-[1.5] text-[10px] sm:text-xs bg-white/10 hover:bg-white/20 text-white' 
+                        flex items-center justify-center font-bold rounded-xl transition-all active:scale-90
+                        ${isAction ? 'flex-[1.5] text-[10px] sm:text-xs bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white backdrop-blur-md' 
                                    : `flex-1 text-sm sm:text-base ${keyStyle}`}
                         h-12 sm:h-14
                       `}
