@@ -61,7 +61,7 @@ function calculateWordleColors(guess, targetWord) {
   return colors;
 }
 
-// Fungsi Pusat Pengecekan Hard Mode (Digunakan UI dan Engine sekaligus agar 100% selaras)
+// Fungsi Pusat Pengecekan Hard Mode
 function checkHardModeValidity(word, prevWords, prevColorsArray) {
     const r = prevWords.length;
     if (r === 0) return { valid: true };
@@ -69,7 +69,7 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
     const prevWord = prevWords[r - 1];
     const prevColors = prevColorsArray[r - 1];
 
-    // 1. Wajib menggunakan huruf Kuning/Hijau dari baris tepat di atasnya
+    // 1. Wajib menggunakan huruf Kuning/Hijau
     const requiredLetters = [];
     for (let c = 0; c < 5; c++) {
         if (prevColors[c] === 'present' || prevColors[c] === 'correct') {
@@ -85,7 +85,7 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
         }
     }
 
-    // 2. Batas akumulatif maksimal penggunaan huruf Abu-abu
+    // 2. Batas huruf Abu-abu
     const wordChars = word.split('');
     for (let prevR = 0; prevR < r; prevR++) {
         const pWord = prevWords[prevR];
@@ -105,9 +105,9 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
                 const countInCurrent = wordChars.filter(x => x === char).length;
                 if (countInCurrent > maxAllowed) {
                     if (maxAllowed === 0) {
-                        return { valid: false, error: `Huruf '${char}' sudah terbukti salah (abu-abu) di petunjuk atas.`, charError: char };
+                        return { valid: false, error: `Huruf '${char}' sudah terbukti salah (abu-abu).`, charError: char };
                     } else {
-                        return { valid: false, error: `Maksimal huruf '${char}' yang boleh digunakan hanya ${maxAllowed}.`, charError: char };
+                        return { valid: false, error: `Maksimal huruf '${char}' hanya ${maxAllowed}.`, charError: char };
                     }
                 }
             }
@@ -116,7 +116,7 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
     return { valid: true };
 }
 
-// Men-generate jalur kata yang dijamin valid
+// Men-generate puzzle DENGAN logika kemiripan progresif
 function generatePuzzleData(targetWord, rows = 3) {
     let foundPath = null;
     let foundColors = null;
@@ -124,7 +124,34 @@ function generatePuzzleData(targetWord, rows = 3) {
     const path = [];
     const colors = [];
 
-    // Menggunakan Backtracking agar jalur warna yang dihasilkan terbukti valid dengan Aturan Hard Mode
+    // 1. Hitung "Skor Kemiripan" semua kata terhadap kata target (Hijau=2, Kuning=1)
+    const wordScores = {};
+    for (let w of DICTIONARY) {
+        const guessColors = calculateWordleColors(w, targetWord);
+        const score = guessColors.reduce((acc, val) => acc + (val === 'correct' ? 2 : val === 'present' ? 1 : 0), 0);
+        wordScores[w] = { score, guessColors };
+    }
+
+    // 2. Buat target skor ideal untuk tiap baris (Baris atas skor rendah, baris bawah skor tinggi)
+    const candidatesPerRow = [];
+    for (let r = 0; r < rows; r++) {
+        let idealScore = 0;
+        if (rows === 2) idealScore = [2, 6][r];
+        else if (rows === 3) idealScore = [1, 4, 7][r];
+        else if (rows === 4) idealScore = [1, 3, 5, 7][r];
+        else if (rows === 5) idealScore = [0, 2, 4, 6, 8][r];
+
+        // Urutkan kamus: kata dengan skor yang paling mendekati 'idealScore' akan dicoba lebih dulu
+        let candidates = shuffle([...DICTIONARY]);
+        candidates.sort((a, b) => {
+            let diffA = Math.abs(wordScores[a].score - idealScore);
+            let diffB = Math.abs(wordScores[b].score - idealScore);
+            return diffA - diffB;
+        });
+        candidatesPerRow.push(candidates);
+    }
+
+    // Menggunakan Backtracking
     function backtrack(r) {
         if (foundPath || attempts > 2000) return; 
         if (r === rows) {
@@ -133,14 +160,18 @@ function generatePuzzleData(targetWord, rows = 3) {
             return;
         }
         
-        const shuffled = shuffle([...DICTIONARY]);
-        for (let word of shuffled) {
+        for (let word of candidatesPerRow[r]) {
             if (word === targetWord) continue;
-            if (path.includes(word)) continue; // Cegah kata sama dalam satu grid
+            if (path.includes(word)) continue; // Cegah kata sama
             
-            const guessColors = calculateWordleColors(word, targetWord);
+            const { score, guessColors } = wordScores[word];
             
             if (r > 0) {
+                // ATURAN PROGRESIF: Baris ini harus punya skor petunjuk >= baris sebelumnya
+                const prevScore = wordScores[path[r-1]].score;
+                if (score < prevScore) continue;
+
+                // Cek Hard Mode
                 const hmCheck = checkHardModeValidity(word, path, colors);
                 if (!hmCheck.valid) continue;
             }
@@ -161,13 +192,12 @@ function generatePuzzleData(targetWord, rows = 3) {
     return null;
 }
 
-// Menemukan kata alternatif tanpa merubah susunan warna petunjuk, dan tidak boleh sama persis dengan yang pernah dimainkan
+// Menemukan kata alternatif
 function findAlternativeWords(targetWord, colorsArray, seenPaths) {
     const rows = colorsArray.length;
     const targetColorsStr = colorsArray.map(c => c.join(','));
     const candsPerRow = [];
     
-    // Pra-eliminasi kamus khusus untuk pola warna baris tersebut
     for (let r = 0; r < rows; r++) {
         const validForColors = DICTIONARY.filter(w => {
             if (w === targetWord) return false;
@@ -191,7 +221,7 @@ function findAlternativeWords(targetWord, colorsArray, seenPaths) {
 
         for (const word of candsPerRow[r]) {
             attempts++;
-            if (currentPath.includes(word)) continue; // Cegah kata sama dalam satu grid alternatif
+            if (currentPath.includes(word)) continue; 
             
             if (r > 0) {
                 const hmCheck = checkHardModeValidity(word, currentPath, colorsArray.slice(0, r));
@@ -387,7 +417,6 @@ const InstructionModal = ({ onClose }) => {
           </button>
         </div>
         
-        {/* Added custom hide scrollbar classes to modal content as well */}
         <div className="p-5 overflow-y-auto flex-1 flex flex-col justify-center min-h-[220px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {steps[currentStep].content}
         </div>
@@ -443,7 +472,6 @@ const Confetti = () => {
   }), []);
 
   return (
-    // Fixed container detached from scroll flow
     <div className="fixed top-1/2 left-1/2 pointer-events-none z-[100]">
       <style>{`
         @keyframes confetti-burst {
@@ -777,7 +805,7 @@ export default function App() {
       {/* Pemisah Estetik */}
       <div className="w-full max-w-lg h-px bg-gradient-to-r from-transparent via-white/15 to-transparent mb-2 z-10 shrink-0"></div>
 
-      {/* Kontainer Utama Area Permainan (Grid + Keyboard) - Ditambahkan utility hide scrollbar */}
+      {/* Kontainer Utama Area Permainan (Grid + Keyboard) */}
       <div className="w-full flex flex-col items-center flex-1 z-10 justify-start pb-2 sm:pb-4 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
         <main className="w-full max-w-[340px] sm:max-w-[380px] flex flex-col items-center mt-0 sm:mt-2 shrink-0">
@@ -808,7 +836,7 @@ export default function App() {
             </span>
           </div>
 
-          {/* Grid Area (Wider, Full-Width Constraint) */}
+          {/* Grid Area */}
           <div className="flex flex-col w-full gap-1.5 sm:gap-2 p-3 sm:p-5 md:p-6 bg-white/[0.02] backdrop-blur-3xl border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl relative">
 
             {grid.map((row, r) => (
@@ -847,14 +875,14 @@ export default function App() {
                 onClick={handleSolve}
                 className="text-xs sm:text-sm text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
               >
-                Solve Puzzle
+                Nyerah ah
               </button>
               <div className="w-px h-3 bg-white/10"></div>
               <button
                 onClick={startNextLevel}
                 className="text-xs sm:text-sm text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5"
               >
-                New Puzzle
+                Ganti Kata
               </button>
             </div>
           )}
