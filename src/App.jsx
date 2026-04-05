@@ -67,25 +67,36 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
     const prevWord = prevWords[r - 1];
     const prevColors = prevColorsArray[r - 1];
 
-    const requiredLetters = [];
-    for (let c = 0; c < 5; c++) {
-        if (prevColors[c] === 'present' || prevColors[c] === 'correct') {
-            requiredLetters.push(prevWord[c]);
+    if (prevWord) {
+        const requiredLetters = [];
+        for (let c = 0; c < 5; c++) {
+            if (prevColors[c] === 'present' || prevColors[c] === 'correct') {
+                requiredLetters.push(prevWord[c]);
+            }
         }
-    }
-    let tempWord = word;
-    for (const reqL of requiredLetters) {
-        if (tempWord.includes(reqL)) {
-            tempWord = tempWord.replace(reqL, '');
-        } else {
-            return { valid: false, error: `Baris ini harus menggunakan huruf '${reqL}' dari petunjuk di atas.` };
+        let tempWord = word;
+        for (const reqL of requiredLetters) {
+            if (tempWord.includes(reqL)) {
+                tempWord = tempWord.replace(reqL, '');
+            } else {
+                return { valid: false, error: `Baris ini harus menggunakan huruf '${reqL}' dari petunjuk di atas.` };
+            }
         }
     }
 
     const wordChars = word.split('');
     for (let prevR = 0; prevR < r; prevR++) {
         const pWord = prevWords[prevR];
+        if (!pWord) continue;
+
         const pCols = prevColorsArray[prevR];
+
+        // ATURAN BARU: Posisi huruf kuning tidak boleh diulang di kolom yang sama
+        for (let c = 0; c < 5; c++) {
+            if (pCols[c] === 'present' && pWord[c] === wordChars[c]) {
+                return { valid: false, error: `Huruf '${pWord[c]}' sudah terbukti bukan di posisi ini (kuning).`, charError: pWord[c] };
+            }
+        }
 
         const requiredCount = {};
         for (let c = 0; c < 5; c++) {
@@ -356,14 +367,15 @@ const InstructionModal = ({ onClose }) => {
     {
       title: "Aturan Hard Mode",
       content: (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-            <p className="text-slate-300 text-sm mb-2"><strong className="text-emerald-400">Wajib Dipakai:</strong><br/>Huruf <b>Kuning</b> dan <b>Hijau</b> dari baris atas <b>HARUS</b> kamu gunakan lagi di baris bawahnya.</p>
-            <div className="flex gap-1.5 items-center justify-center"><Tile letter="E" status="present" size="small" /><div className="text-slate-400">→</div><Tile letter="E" status="correct" size="small" /></div>
+            <p className="text-slate-300 text-sm mb-1"><strong className="text-emerald-400">Wajib Dipakai:</strong><br/>Huruf <b>Kuning</b> dan <b>Hijau</b> dari petunjuk sebelumnya <b>HARUS</b> kamu gunakan lagi.</p>
           </div>
           <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-            <p className="text-slate-300 text-sm mb-2"><strong className="text-slate-400">Dilarang Dipakai:</strong><br/>Huruf <b>Abu-abu</b> artinya salah, sehingga <b>TIDAK BOLEH</b> kamu gunakan lagi di baris bawahnya.</p>
-            <div className="flex gap-1.5 items-center justify-center"><Tile letter="S" status="absent" size="small" /><div className="text-slate-400">→</div><Tile letter="S" status="absent" hasError size="small" /></div>
+            <p className="text-slate-300 text-sm mb-1"><strong className="text-amber-400">Pindah Posisi:</strong><br/>Huruf <b>Kuning</b> <b>TIDAK BOLEH</b> diisi di kotak/posisi yang sama persis lagi.</p>
+          </div>
+          <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+            <p className="text-slate-300 text-sm mb-1"><strong className="text-slate-400">Dilarang Dipakai:</strong><br/>Huruf <b>Abu-abu</b> artinya salah, <b>TIDAK BOLEH</b> kamu gunakan lagi.</p>
           </div>
         </div>
       )
@@ -579,17 +591,20 @@ export default function App() {
     let newErrors = Array(puzzle.rows).fill(null).map(() => Array(5).fill(null));
     let isWin = true;
     let anyEmpty = false;
-    const currentWords = [];
-
+    
+    const currentWords = Array(puzzle.rows).fill(null);
     for (let r = 0; r < puzzle.rows; r++) {
-      const rowChars = grid[r];
-      const isRowFull = rowChars.every(c => c !== '');
-      const word = rowChars.join('');
-      
-      if (!isRowFull) {
+      if (grid[r].every(c => c !== '')) {
+        currentWords[r] = grid[r].join('');
+      } else {
         anyEmpty = true;
         isWin = false;
       }
+    }
+
+    for (let r = 0; r < puzzle.rows; r++) {
+      const rowChars = grid[r];
+      const word = currentWords[r];
 
       for (let c = 0; c < 5; c++) {
         if (rowChars[c] !== '' && puzzle.colors[r][c] === 'correct' && rowChars[c] !== puzzle.target[c]) {
@@ -598,7 +613,7 @@ export default function App() {
         }
       }
 
-      if (isRowFull) {
+      if (word) {
         if (!DICTIONARY.includes(word)) {
           newErrors[r].fill("Bukan kata dalam kamus bahasa Indonesia.");
           isWin = false;
@@ -614,7 +629,7 @@ export default function App() {
         }
 
         if (r > 0) {
-          const hmCheck = checkHardModeValidity(word, currentWords, puzzle.colors.slice(0, r));
+          const hmCheck = checkHardModeValidity(word, currentWords.slice(0, r), puzzle.colors.slice(0, r));
           if (!hmCheck.valid) {
               for (let c = 0; c < 5; c++) {
                   if (hmCheck.charError) {
@@ -626,7 +641,6 @@ export default function App() {
               isWin = false;
           }
         }
-        currentWords.push(word);
       }
     }
 
@@ -672,7 +686,8 @@ export default function App() {
         if (c < 4) {
           setActiveCell({ r, c: c + 1 });
         } else {
-          if (r < puzzle.rows - 1) setActiveCell({ r: r + 1, c: 0 });
+          if (r > 0 && prev[r - 1][0] === '') setActiveCell({ r: r - 1, c: 0 });
+          else if (r < puzzle.rows - 1) setActiveCell({ r: r + 1, c: 0 });
         }
         return newGrid;
       }
