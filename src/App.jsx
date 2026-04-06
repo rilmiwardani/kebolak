@@ -505,7 +505,7 @@ export default function App() {
   const [activeCell, setActiveCell] = useState({ r: 0, c: 0 });
   const [gameState, setGameState] = useState('loading');
   const [toastMsg, setToastMsg] = useState('');
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [progress, setProgress] = useState({ current: 0, total: BASE_DICTIONARY.length });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // useRef untuk mengatasi bug toast menghilang cepat
@@ -588,14 +588,15 @@ export default function App() {
     // Memastikan mode yang digunakan adalah mode yang baru ditekan, atau fallback ke state saat ini
     const activeMode = typeof modeOverride === 'boolean' ? modeOverride : isHardMode;
 
-    const newLvl = getValidLevel(activeMode, dictionary);
+    // HANYA gunakan BASE_DICTIONARY untuk membuat target dan susunan puzzle grid
+    const newLvl = getValidLevel(activeMode, BASE_DICTIONARY);
     setPuzzle(newLvl);
     setGrid(Array(newLvl.rows).fill('').map(() => Array(5).fill('')));
     setErrors(Array(newLvl.rows).fill('').map(() => Array(5).fill(null)));
     setActiveCell({ r: 0, c: 0 });
-    setProgress({ current: getPlayedWords().length, total: dictionary.length });
+    setProgress({ current: getPlayedWords().length, total: BASE_DICTIONARY.length });
     setGameState('playing');
-  }, [isHardMode, isDictLoaded, dictionary]);
+  }, [isHardMode, isDictLoaded, dictionary.length]);
 
   useEffect(() => {
      if (isDictLoaded && !puzzle) {
@@ -609,10 +610,10 @@ export default function App() {
     setErrors(Array(puzzle.rows).fill('').map(() => Array(5).fill(null)));
   }, [puzzle]);
 
-  // Bug fix: Mem-passing isHardMode agar alternatif mengikuti mode yang sedang aktif
+  // Gunakan BASE_DICTIONARY untuk alternatif susunan
   const handleAlternative = useCallback(() => {
     if (!puzzle) return;
-    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, dictionary, isHardMode);
+    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, BASE_DICTIONARY, isHardMode);
     
     if (newWords) {
         setPuzzle(prev => ({ 
@@ -623,9 +624,9 @@ export default function App() {
         setGrid(newWords.map(w => w.split('')));
         setErrors(Array(puzzle.rows).fill('').map(() => Array(5).fill(null)));
     } else {
-        showToast("Tidak ada alternatif kombinasi logis lainnya untuk pola warna ini di dalam kamus.");
+        showToast("Tidak ada alternatif kombinasi logis lainnya untuk pola warna ini di dalam kamus dasar.");
     }
-  }, [puzzle, dictionary, isHardMode]);
+  }, [puzzle, isHardMode]);
 
   const validateGrid = useCallback(() => {
     if (!puzzle) return;
@@ -656,6 +657,7 @@ export default function App() {
       }
 
       if (word) {
+        // Validasi menggunakan dictionary gabungan (BASE + txt) untuk membolehkan input pengguna
         if (!dictionary.includes(word)) {
           newErrors[r].fill("Bukan kata dalam kamus bahasa Indonesia.");
           isWin = false;
@@ -670,7 +672,7 @@ export default function App() {
           }
         }
 
-        // Bug fix: Hard Mode kini HANYA aktif mengeksekusi aturannya jika tombol berada di mode Hard
+        // Hard Mode aturannya
         if (r > 0 && isHardMode) {
           const hmCheck = checkHardModeValidity(word, currentWords.slice(0, r), puzzle.colors.slice(0, r));
           if (!hmCheck.valid) {
@@ -692,7 +694,7 @@ export default function App() {
     if (isWin && !anyEmpty && gameState !== 'won') {
       setGameState('won');
       addPlayedWord(puzzle.target);
-      setProgress({ current: getPlayedWords().length, total: dictionary.length });
+      setProgress({ current: getPlayedWords().length, total: BASE_DICTIONARY.length });
     } else if ((!isWin || anyEmpty) && gameState === 'won') {
       setGameState('playing'); 
     }
@@ -725,7 +727,6 @@ export default function App() {
         return newGrid;
       }
 
-      // Bug Fix: 'ENTER' kini berguna untuk melompat otomatis ke baris kosong selanjutnya
       if (key === 'ENTER') {
         for (let i = 0; i < puzzle.rows; i++) {
           const emptyCol = newGrid[i].indexOf('');
@@ -946,29 +947,26 @@ export default function App() {
         </main>
 
         {gameState === 'won' ? (
-          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-2 sm:gap-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
+          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-3 sm:gap-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
             
-            <div className="relative flex items-center justify-center mt-2 mb-2">
-              <Confetti key={progress.current} />
-              <div className="relative z-10 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 p-4 rounded-full ring-1 ring-inset ring-emerald-500/30">
-                <Trophy className="w-12 h-12 md:w-14 md:h-14 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]" />
-              </div>
-            </div>
+            <Confetti key={progress.current} />
 
             <div className="text-center z-10">
                <h2 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 mb-1">Selamat!</h2>
                <p className="text-slate-300 text-xs sm:text-sm">Anda berhasil memecahkan teka-teki.</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 w-full sm:w-auto z-10">
+            
+            {/* Tombol diubah menjadi flex-row (horizontal) agar menjadi 2 kolom di mobile */}
+            <div className="flex flex-row gap-2 sm:gap-3 w-full z-10 mt-1">
               <button 
                 onClick={handleAlternative}
-                className="px-6 py-2.5 sm:py-3 bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium rounded-full transition-all active:scale-95 flex-1"
+                className="px-2 py-2.5 sm:px-6 sm:py-3 bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white text-[11px] sm:text-sm font-medium rounded-full transition-all active:scale-95 flex-1 whitespace-nowrap"
               >
                 Alternatif Jawaban
               </button>
               <button 
                 onClick={startNextLevel}
-                className="px-6 py-2.5 sm:py-3 bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 hover:brightness-110 text-white text-xs sm:text-sm font-bold rounded-full shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)] transition-all active:scale-95 flex-1"
+                className="px-2 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 hover:brightness-110 text-white text-[11px] sm:text-sm font-bold rounded-full shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)] transition-all active:scale-95 flex-1 whitespace-nowrap"
               >
                 Main Lagi
               </button>
