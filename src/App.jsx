@@ -91,7 +91,6 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
 
         const pCols = prevColorsArray[prevR];
 
-        // ATURAN BARU: Posisi huruf kuning tidak boleh diulang di kolom yang sama
         for (let c = 0; c < 5; c++) {
             if (pCols[c] === 'present' && pWord[c] === wordChars[c]) {
                 return { valid: false, error: `Huruf '${pWord[c]}' sudah terbukti bukan di posisi ini (kuning).`, charError: pWord[c] };
@@ -124,7 +123,7 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
 }
 
 // Men-generate puzzle DENGAN logika kemiripan progresif
-function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
+function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY, difficulty = 'normal') {
     let foundPath = null;
     let foundColors = null;
     let attempts = 0;
@@ -145,6 +144,7 @@ function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
         else if (rows === 3) idealScore = [1, 4, 7][r];
         else if (rows === 4) idealScore = [1, 3, 5, 7][r];
         else if (rows === 5) idealScore = [0, 2, 4, 6, 8][r];
+        else if (rows === 6) idealScore = [0, 1, 3, 5, 7, 9][r];
 
         let candidates = shuffle([...dict]);
         candidates.sort((a, b) => {
@@ -173,8 +173,10 @@ function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
                 const prevScore = wordScores[path[r-1]].score;
                 if (score < prevScore) continue;
 
-                const hmCheck = checkHardModeValidity(word, path, colors);
-                if (!hmCheck.valid) continue;
+                if (difficulty !== 'normal') {
+                    const hmCheck = checkHardModeValidity(word, path, colors);
+                    if (!hmCheck.valid) continue;
+                }
             }
             
             path.push(word);
@@ -193,7 +195,7 @@ function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
     return null;
 }
 
-function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DICTIONARY, isHardMode = false) {
+function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DICTIONARY, difficulty = 'normal') {
     const rows = colorsArray.length;
     const targetColorsStr = colorsArray.map(c => c.join(','));
     const candsPerRow = [];
@@ -223,7 +225,7 @@ function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DI
             attempts++;
             if (currentPath.includes(word)) continue; 
             
-            if (r > 0 && isHardMode) {
+            if (r > 0 && difficulty !== 'normal') {
                 const hmCheck = checkHardModeValidity(word, currentPath, colorsArray.slice(0, r));
                 if (!hmCheck.valid) continue;
             }
@@ -237,7 +239,7 @@ function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DI
     return foundPath;
 }
 
-function getValidLevel(isHardMode = false, dict = BASE_DICTIONARY) {
+function getValidLevel(difficulty = 'normal', dict = BASE_DICTIONARY) {
    let played = getPlayedWords();
    let available = dict.filter(w => !played.includes(w));
    
@@ -248,18 +250,18 @@ function getValidLevel(isHardMode = false, dict = BASE_DICTIONARY) {
    }
 
    let shuffledAvailable = shuffle([...available]);
-   let targetRows = isHardMode ? 5 : 3;
+   let targetRows = difficulty === 'ekstrem' ? 6 : difficulty === 'hard' ? 5 : 3;
 
    for (let target of shuffledAvailable) {
-      for(let i=0; i < (isHardMode ? 15 : 5); i++) {
-         let data = generatePuzzleData(target, targetRows, dict);
+      for(let i=0; i < (difficulty !== 'normal' ? 15 : 5); i++) {
+         let data = generatePuzzleData(target, targetRows, dict, difficulty);
          if (data) return { target, colors: data.colors, words: data.words, rows: targetRows, seenPaths: [data.words.join(',')] };
       }
    }
    
-   let fallbackRows = isHardMode ? 4 : 2;
+   let fallbackRows = difficulty === 'ekstrem' ? 5 : difficulty === 'hard' ? 4 : 2;
    for (let target of shuffledAvailable) {
-      let data = generatePuzzleData(target, fallbackRows, dict);
+      let data = generatePuzzleData(target, fallbackRows, dict, difficulty);
       if (data) return { target, colors: data.colors, words: data.words, rows: fallbackRows, seenPaths: [data.words.join(',')] };
    }
 
@@ -381,6 +383,21 @@ const InstructionModal = ({ onClose }) => {
       )
     },
     {
+      title: "Mode Ekstrem",
+      content: (
+        <div className="space-y-4">
+          <p className="text-slate-300 text-sm leading-relaxed">
+            Berani mencoba tantangan sesungguhnya? Di <strong>Mode Ekstrem</strong>:
+          </p>
+          <ul className="list-disc pl-5 text-sm text-slate-300 space-y-3">
+            <li>Terdapat <strong>6 baris</strong> grid (membutuhkan lebih banyak penalaran beruntun).</li>
+            <li>Seluruh aturan wajib pada Hard Mode tetap berlaku.</li>
+            <li><strong className="text-rose-400">Keyboard Buta!</strong> Warna pada keyboard virtual sengaja dimatikan. Kamu harus mengingat posisi huruf dan melihat grid langsung secara mandiri.</li>
+          </ul>
+        </div>
+      )
+    },
+    {
       title: "Tanda Kesalahan",
       content: (
         <div className="space-y-4 text-center">
@@ -447,7 +464,7 @@ const InstructionModal = ({ onClose }) => {
   );
 };
 
-// --- KOMPONEN CONFETTI (Dibungkus React.memo agar tidak me-render ulang) ---
+// --- KOMPONEN CONFETTI ---
 const Confetti = React.memo(() => {
   const colors = ['#10b981', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6', '#ec4899'];
   const pieces = useMemo(() => Array.from({ length: 75 }).map((_, i) => {
@@ -498,7 +515,7 @@ export default function App() {
   const [isDictLoaded, setIsDictLoaded] = useState(false);
 
   const [showInstructions, setShowInstructions] = useState(() => getPlayedWords().length === 0);
-  const [isHardMode, setIsHardMode] = useState(false);
+  const [difficulty, setDifficulty] = useState('normal'); // State baru untuk 3 Mode
   const [puzzle, setPuzzle] = useState(null); 
   const [grid, setGrid] = useState([]);
   const [errors, setErrors] = useState([]);
@@ -583,7 +600,7 @@ export default function App() {
   const startNextLevel = useCallback((modeOverride) => {
     if (!isDictLoaded || dictionary.length === 0) return;
 
-    const activeMode = typeof modeOverride === 'boolean' ? modeOverride : isHardMode;
+    const activeMode = typeof modeOverride === 'string' ? modeOverride : difficulty;
 
     const newLvl = getValidLevel(activeMode, BASE_DICTIONARY);
     setPuzzle(newLvl);
@@ -592,7 +609,7 @@ export default function App() {
     setActiveCell({ r: 0, c: 0 });
     setProgress({ current: getPlayedWords().length, total: BASE_DICTIONARY.length });
     setGameState('playing');
-  }, [isHardMode, isDictLoaded, dictionary.length]);
+  }, [difficulty, isDictLoaded, dictionary.length]);
 
   useEffect(() => {
      if (isDictLoaded && !puzzle) {
@@ -608,7 +625,7 @@ export default function App() {
 
   const handleAlternative = useCallback(() => {
     if (!puzzle) return;
-    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, BASE_DICTIONARY, isHardMode);
+    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, BASE_DICTIONARY, difficulty);
     
     if (newWords) {
         setPuzzle(prev => ({ 
@@ -621,7 +638,7 @@ export default function App() {
     } else {
         showToast("Tidak ada alternatif kombinasi logis lainnya untuk pola warna ini di dalam kamus dasar.");
     }
-  }, [puzzle, isHardMode]);
+  }, [puzzle, difficulty]);
 
   const validateGrid = useCallback(() => {
     if (!puzzle) return;
@@ -666,7 +683,7 @@ export default function App() {
           }
         }
 
-        if (r > 0 && isHardMode) {
+        if (r > 0 && difficulty !== 'normal') {
           const hmCheck = checkHardModeValidity(word, currentWords.slice(0, r), puzzle.colors.slice(0, r));
           if (!hmCheck.valid) {
               for (let c = 0; c < 5; c++) {
@@ -691,7 +708,7 @@ export default function App() {
     } else if ((!isWin || anyEmpty) && gameState === 'won') {
       setGameState('playing'); 
     }
-  }, [grid, puzzle, gameState, dictionary, isHardMode]);
+  }, [grid, puzzle, gameState, dictionary, difficulty]);
 
   useEffect(() => {
     validateGrid();
@@ -795,7 +812,7 @@ export default function App() {
       `}</style>
 
       <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/15 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
-      <div className="absolute bottom-[10%] right-[-15%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
+      <div className="absolute bottom-[10%] right-[-15%] w-[50%] h-[50%] bg-fuchsia-600/10 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
 
       <header className="w-full max-w-lg flex flex-shrink-0 items-center justify-between z-10 pb-2 sm:pb-3 mt-1 sm:mt-2">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -854,38 +871,28 @@ export default function App() {
             <p className="text-sm font-medium">{toastMsg}</p>
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-2 w-full">
-            <span 
-              onClick={() => { 
-                if(isHardMode) { 
-                  setIsHardMode(false); 
-                  startNextLevel(false); 
-                } 
-              }}
-              className={`cursor-pointer text-xs sm:text-sm transition-colors ${!isHardMode ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-white'}`}>
-              Normal
-            </span>
-            <button
-              onClick={() => {
-                const nextMode = !isHardMode;
-                setIsHardMode(nextMode);
-                startNextLevel(nextMode);
-              }}
-              className="w-12 h-6 sm:w-14 sm:h-7 rounded-full bg-white/5 ring-1 ring-inset ring-white/10 relative transition-all focus:outline-none hover:bg-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]"
-              title={isHardMode ? "Kembali ke Normal" : "Aktifkan Hard Mode"}
-            >
-              <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full absolute top-1 sm:top-0.5 transition-all duration-300 shadow-md ${isHardMode ? 'left-[26px] sm:left-[32px] bg-rose-400' : 'left-1 bg-emerald-400'}`}></div>
-            </button>
-            <span 
-              onClick={() => { 
-                if(!isHardMode) { 
-                  setIsHardMode(true); 
-                  startNextLevel(true); 
-                } 
-              }}
-              className={`cursor-pointer text-xs sm:text-sm transition-colors ${isHardMode ? 'text-rose-400 font-bold' : 'text-slate-500 hover:text-white'}`}>
-              Hard Mode
-            </span>
+          <div className="flex items-center justify-center w-full max-w-[300px] bg-[#0a0a0a] ring-1 ring-inset ring-white/10 rounded-full p-1 mb-3 shadow-inner">
+            {[
+              { id: 'normal', label: 'Normal' },
+              { id: 'hard', label: 'Hard' },
+              { id: 'ekstrem', label: 'Ekstrem' }
+            ].map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => {
+                  if (difficulty !== mode.id) {
+                    setDifficulty(mode.id);
+                    startNextLevel(mode.id);
+                  }
+                }}
+                className={`flex-1 py-1.5 text-[11px] sm:text-xs font-bold rounded-full transition-all capitalize whitespace-nowrap
+                  ${difficulty === mode.id 
+                    ? (mode.id === 'ekstrem' ? 'bg-rose-600 text-white shadow-md' : mode.id === 'hard' ? 'bg-amber-500 text-white shadow-md' : 'bg-emerald-500 text-white shadow-md') 
+                    : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                {mode.label}
+              </button>
+            ))}
           </div>
 
           <div className="flex flex-col w-full gap-1.5 sm:gap-2 p-3 sm:p-5 md:p-6 bg-white/[0.01] backdrop-blur-3xl ring-1 ring-inset ring-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative">
@@ -910,7 +917,7 @@ export default function App() {
 
             <div className="flex w-full gap-1.5 sm:gap-2 opacity-95">
               {puzzle.target.split('').map((letter, i) => (
-                <div key={i} className="w-full aspect-square flex items-center justify-center font-extrabold text-2xl sm:text-3xl md:text-4xl uppercase rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 ring-1 ring-inset ring-white/40 text-white shadow-md pointer-events-none [text-shadow:_0_2px_4px_rgba(0,0,0,0.4)]">
+                <div key={i} className="w-full aspect-square flex items-center justify-center font-extrabold text-2xl sm:text-3xl md:text-4xl uppercase rounded-2xl bg-emerald-500 ring-1 ring-inset ring-white/20 text-white shadow-md pointer-events-none [text-shadow:_0_2px_4px_rgba(0,0,0,0.4)]">
                   {letter}
                 </div>
               ))}
@@ -968,7 +975,9 @@ export default function App() {
               <div key={i} className={`flex justify-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5 w-full ${i === 1 ? 'px-[5%]' : ''}`}>
                 {row.map((key) => {
                   const isAction = key === 'ENTER' || key === 'BACKSPACE';
-                  const status = keyStatuses[key];
+                  
+                  // Di Mode Ekstrem, warna petunjuk keyboard mati (null)
+                  const status = difficulty === 'ekstrem' ? null : keyStatuses[key];
                   
                   let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-md backdrop-blur-md';
                   if (status === 'correct') keyStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-sm hover:brightness-110 [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
