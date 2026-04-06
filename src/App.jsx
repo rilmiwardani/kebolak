@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Delete, Trophy, RefreshCw, XCircle, Info, X, ChevronRight, ChevronLeft, Maximize, Minimize } from 'lucide-react';
 
-// --- KAMUS KATA ---
-const DICTIONARY = [
+// --- KAMUS KATA DASAR (Fallback jika txt tidak ada) ---
+const BASE_DICTIONARY = [
   "ABADI", "ABANG", "ABJAD", "ABSEN", "ACARA", "ACUNG", "AGAMA", "AGUNG", "AJAIB", "AJANG", "AKBAR", "AKHIR", "AKRAB", "AKSEN", "AKSES", "AKTIF", "AKTOR", "ALAMI", "ALBUM", "ALIAS", "ALIBI", "ALLAH", "ALTAR", "AMBIL", "AMPUN", "ANCAM", "ANDAI", "ANDIL", "ANEKA", "ANGAN", "ANGIN", "ANGKA", "ANGSA", "ANTAR", "ANTIK", "ANTRE", "ANYAM", "ANYIR", "AORTA", "APRIL", "APUNG", "ARANG", "ARBEI", "ARENA", "ARGON", "ARIES", "AROMA", "ARSIP", "ARSIR", "ARTIK", "ARTIS", "ARUNG", "ARWAH", "ASASI", "ASBAK", "ASBES", "ASING", "ASPAL", "ASPEK", "ASYIK", "ATEIS", "ATLAS", "ATLET", "AUDIO", "AUDIT", "AURAT", "AURUM", "AVTUR", "BABAK", "BABAT", "BABON", "BACEM", "BACOK", "BACOT", "BADAI", "BADAK", "BADAN", "BADUI", "BADUT", "BAGAI", "BAGAN", "BAGUS", "BAHAK", "BAHAN", "BAHAS", "BAHWA", "BAJAJ", "BAJAK", "BAKAL", "BAKAR", "BAKAT", "BAKAU", "BAKMI", "BAKSO", "BAKTI", "BAKUL", "BALAI", "BALAP", "BALAS", "BALET", "BALIK", "BALOK", "BALON", "BALUR", "BALUT", "BAMBU", "BANDO", "BANTU", "BANYU", "BAPAK", "BARAK", "BAREL", "BAREP", "BARET", "BARIS", "BASAH", "BASAL", "BASIS", "BASMI", "BASUH", "BATAK", "BATAL", "BATAS", "BATIK", "BATIL", "BATIN", "BATOK", "BATON", "BATUK", "BAWAH", "BAWAL", "BAWEL", "BAYAM", "BAYAR", "BAZAR", "BEBAL", "BEBAN", "BEBAS", "BEBAT", "BEBEK", "BEBER", "BECAK", "BECEK", "BECUS", "BEDAH", "BEDAK", "BEDIL", "BEGAH", "BEGAL", "BEJAT", "BEKAL", "BEKAM", "BEKAP", "BEKAS", "BEKER", "BEKUK", "BELAH", "BELAI", "BELAS", "BELEK", "BELEL", "BELIA", "BELIT", "BELOK", "BELOT", "BELUK", "BELUM", "BELUT", "BENAH", "BENAK", "BENAM", "BENAR", "BENCI", "BENDA", "BENIH", "BENUA", "BERAK", "BERAS", "BERAT", "BERES", "BERET", "BERUK", "BESAN", "BESAR", "BESEK", "BESER", "BESET", "BESOK", "BESUK", "BESUT", "BETAH", "BETIS", "BETON", "BETOT", "BETUL", "BIANG", "BIARA", "BIASA", "BIAYA", "BIBEL", "BIBIR", "BIBIT", "BIDAH", "BIDAK", "BIDAN", "BIDET", "BIDIK", "BIDUK", "BIDUR", "BIHUN", "BIJAK", "BIJIH", "BIKIN", "BIKSU", "BILAH", "BILAS", "BILIK", "BILUR", "BINAL", "BINAR", "BINER", "BINTI", "BIOLA", "BIOTA", "BISIK", "BISON", "BISUL", "BLONG", "BOBOL", "BOBOT", "BOCAH", "BOCOR", "BODOH", "BOGEM", "BOKEK", "BOKOR", "BOLAK", "BOLEH", "BOLOS", "BOLOT", "BONUS", "BOROS", "BOSAN", "BOTAK", "BOTOL", "BRUTO", "BUANA", "BUANG", "BUAYA", "BUBAR", "BUBUH", "BUBUK", "BUBUR", "BUBUT", "BUDAK", "BUFET", "BUGAR", "BUGIL", "BUJUK", "BUJUR", "BUKAN", "BUKET", "BUKIT", "BUKTI", "BULAN", "BULAT", "BULIR", "BUMBU", "BUNDA", "BUNGA", "BUNTU", "BUNUH", "BUNYI", "BURAI", "BURAM", "BURAS", "BURON", "BURSA", "BURUH", "BURUK", "BUSET", "BUSUK", "BUSUR", "BUTIK", "BUTIR", "BUTUH", "BUTUT", "BUYAR", "BUYUT", "CABAI", "CABIK", "CABUT", "CACAH", "CACAR", "CACAT", "CADAR", "CADAS", "CADEL", "CAGAR", "CAKAP", "CAKAR", "CAKEP", "CAKRA", "CAKUP", "CALON", "CAMAR", "CAMAT", "CANDA", "CANDI", "CANDU", "CAPAI", "CAPEK", "CAPIT", "CATAT", "CATUR", "CATUT", "CAWAN", "CEBAN", "CEBOL", "CEGAH", "CEGAT", "CEKAL", "CEKAM", "CEKAT", "CEKER", "CEKIK", "CEKOK", "CELAH", "CELAK", "CELUP", "CEMAR", "CEMAS", "CEPAT", "CEPEK", "CEPER", "CEPOL", "CERAH", "CERAI", "CERAK", "CERCA", "CERIA", "CERNA", "CETAK", "CETUS", "CEWEK", "CIBIR", "CICIL", "CICIP", "CICIT", "CIDUK", "CIKAL", "CILIK", "CILOK", "CINTA", "CIPTA", "CITRA", "COBEK", "COCOK", "COCOL", "COLEK", "COLOK", "COMEL", "COMOT", "COPET", "COPOT", "CORAK", "CORET", "COWOK", "CUACA", "CUBIT", "CUCUR", "CUKAI", "CUKUP", "CUKUR", "CULAS", "CULIK", "CURAH", "CURAM", "DADAK", "DADAR", "DAHAK", "DAHAN", "DAJAL", "DAKSA", "DAKWA", "DALAM", "DALIH", "DALIL", "DAMAI", "DAMAR", "DAMBA", "DANAU", "DANSA", "DAPAT", "DAPUR", "DARAH", "DARAT", "DASAR", "DATAR", "DATUK", "DATUM", "DAWAI", "DAWET", "DEBAR", "DEBAT", "DEBIT", "DEBUR", "DEBUS", "DEBUT", "DEGUP", "DEKAN", "DEKAP", "DEKAT", "DEKIL", "DEKOR", "DELIK", "DELTA", "DEMAM", "DENAH", "DENDA", "DEPAN", "DEPOT", "DERAI", "DERAP", "DERAS", "DERAU", "DEREK", "DERET", "DERIK", "DESAK", "DESAU", "DESIR", "DESIS", "DETAK", "DETIK", "DEWAN", "DIARE", "DIDIH", "DIDIK", "DIGIT", "DIKSI", "DIKTE", "DINAR", "DINAS", "DIPAN", "DISKO", "DOANG", "DOBEL", "DODOL", "DOGMA", "DOLAR", "DOMBA", "DONAT", "DONOR", "DOSEN", "DOSIS", "DOYAN", "DRAMA", "DUAFA", "DUDUK", "DUHAI", "DUKUN", "DUNIA", "DUSTA", "DUSUN", "ECENG", "EDISI", "EGOIS", "ELANG", "ELEGI", "ELING", "ELIPS", "EMAIL", "EMBER", "EMBUN", "EMISI", "EMOSI", "EMPAL", "EMPAT", "EMPUK", "ENCER", "ENCOK", "ENDAP", "ENTAH", "ENTRI", "ENYAH", "ENZIM", "EROSI", "ETIKA", "ETNIK", "ETNIS", "EYANG", "FABEL", "FAJAR", "FAKIR", "FAKTA", "FASIH", "FATAL", "FATWA", "FAUNA", "FESES", "FETUS", "FIKSI", "FINAL", "FISIK", "FLORA", "FOBIA", "FOKUS", "FOLIO", "FORUM", "FOSIL", "FOTON", "FRASA", "FRASE", "FREON", "FUNGI", "FUTUR", "GABAH", "GABUS", "GADAI", "GADIS", "GADUH", "GAGAH", "GAGAK", "GAGAL", "GAJAH", "GALAH", "GALAK", "GALAT", "GALAU", "GALON", "GAMIS", "GAMMA", "GANAS", "GANDA", "GANTI", "GAPAI", "GARAM", "GARAP", "GARDA", "GARDU", "GARIS", "GARPU", "GARUK", "GARUT", "GASAL", "GATAL", "GAUNG", "GAWAI", "GAWAT", "GELAP", "GELAR", "GELAS", "GEMAR", "GEMAS", "GEMPA", "GEMUK", "GENAP", "GENRE", "GERAK", "GERAM", "GESEK", "GESER", "GETAH", "GIGIH", "GIGIT", "GILIR", "GINCU", "GITAR", "GLOBE", "GOCAP", "GOLOK", "GOPEK", "GORES", "GOSIP", "GOSOK", "GOYAH", "GRAHA", "GRIYA", "GROGI", "GUBUK", "GUDEG", "GUGAT", "GUGUR", "GUGUS", "GULAI", "GULAT", "GULMA", "GUMAM", "GUNDU", "GURAU", "GURIH", "GURUH", "GURUN", "GUSUR", "GUYUR", "HABIB", "HABIS", "HADAP", "HADIR", "HAJAR", "HAJAT", "HAKIM", "HALAL", "HALMA", "HALTE", "HALUS", "HAMBA", "HAMPA", "HANTU", "HANYA", "HAPUS", "HARAM", "HARAP", "HARGA", "HARPA", "HARTA", "HARUM", "HARUS", "HASIL", "HASTA", "HASUT", "HAYATI", "HEBAT", "HEBOH", "HELAI", "HEMAT", "HENTI", "HERAN", "HERTZ", "HEWAN", "HIBAH", "HIBUR", "HIDUP", "HIJAB", "HIJAU", "HIMNE", "HINDU", "HIRAU", "HIRUP", "HITAM", "HONOR", "HOROR", "HOTEL", "HUJAN", "HUJAT", "HUKUM", "HUMOR", "HUMUS", "HUNUS", "HURUF", "HUTAN", "IALAH", "IBLIS", "IBRIT", "IDEAL", "IDOLA", "IKLAN", "IKLIM", "IKRAR", "ILAHI", "ILUSI", "IMAJI", "IMBAL", "IMBAS", "IMBAU", "IMBUH", "IMLEK", "IMPAS", "IMPOR", "INANG", "INCAR", "INDAH", "INDRA", "INDUK", "INFAK", "INFUS", "INGAT", "INGIN", "INJAK", "INJIL", "INSAF", "INSAN", "INTAI", "INTAN", "INTEL", "INTIP", "IRAMA", "IRING", "IRONI", "ISENG", "ISLAM", "ISTRI", "JABAT", "JAGAT", "JAHAT", "JAHIL", "JAHIT", "JAJAH", "JAJAN", "JAKET", "JAKSA", "JAKUN", "JALAK", "JALAN", "JALIN", "JALUR", "JAMAK", "JAMAN", "JAMBU", "JAMIN", "JAMUR", "JANIN", "JANJI", "JANUR", "JARAK", "JARUM", "JASAD", "JATAH", "JATUH", "JAWAB", "JEBAK", "JEBOL", "JEJAK", "JELAS", "JELEK", "JEMUR", "JENIS", "JENUH", "JEPIT", "JERUK", "JIDAT", "JIJIK", "JILAT", "JILID", "JIMAT", "JINAK", "JIRAN", "JODOH", "JOGET", "JOMPO", "JOROK", "JOULE", "JRENG", "JUANG", "JUARA", "JUBAH", "JUDES", "JUDUL", "JUJUR", "JUMAT", "JUMBO", "JUMPA", "JURUS", "KABAR", "KABEL", "KABIN", "KABUL", "KABUR", "KABUT", "KACAU", "KADAL", "KADAR", "KADER", "KAFAN", "KAGET", "KAGUM", "KAKAK", "KAKAO", "KAKAP", "KAKEK", "KALAH", "KALAP", "KALAU", "KALBU", "KALDU", "KALEM", "KALOR", "KALUT", "KAMAR", "KAMIS", "KAMUS", "KANAL", "KANAN", "KANJI", "KAPAK", "KAPAL", "KAPAN", "KAPAS", "KAPOK", "KAPUK", "KAPUR", "KARAM", "KARAT", "KARET", "KARGO", "KARIB", "KARMA", "KARTU", "KARYA", "KASAR", "KASET", "KASIH", "KASIR", "KASTA", "KASTI", "KASUR", "KASUS", "KATAK", "KATUN", "KATUP", "KAWAH", "KAWAL", "KAWAN", "KAWAT", "KAYAK", "KAYUH", "KEBAB", "KEBAL", "KEBAS", "KEBUN", "KEBUT", "KECAM", "KECAP", "KECIL", "KECUT", "KEDAI", "KEDAP", "KEDIP", "KEDIP", "KEDOK", "KEJAM", "KEJAR", "KEJUT", "KEKAL", "KEKAR", "KELAK", "KELAM", "KELAS", "KELOR", "KEMAH", "KEMAS", "KENAL", "KENDI", "KEONG", "KEPAK", "KEPAL", "KEPIK", "KERAH", "KERAK", "KERAM", "KERAN", "KERAP", "KERAS", "KERAT", "KEREN", "KERIS", "KERJA", "KERUH", "KERUT", "KESAL", "KESAN", "KESET", "KETAN", "KETAT", "KETIK", "KETUA", "KETUK", "KIBAR", "KIBAS", "KICAU", "KIDAL", "KIKIL", "KIKIR", "KIKIS", "KIKUK", "KILAU", "KIMIA", "KIPAS", "KIPER", "KIRIM", "KISAH", "KITAB", "KLAIM", "KLIEN", "KLISE", "KOALA", "KOBOI", "KOBRA", "KOCAK", "KODOK", "KOLAK", "KOLAM", "KOLOM", "KOLON", "KOLOT", "KOMET", "KOMIK", "KONDE", "KONON", "KOPER", "KOPLO", "KORAN", "KOTAK", "KOTOR", "KRIYA", "KUACI", "KUALI", "KUASA", "KUBAH", "KUBIK", "KUBUR", "KUBUS", "KUKUS", "KULIT", "KULOT", "KUMAL", "KUMAN", "KUMAT", "KUMIS", "KUMUH", "KUMUR", "KUNCI", "KUOTA", "KUPAS", "KUPON", "KURAS", "KURIR", "KURMA", "KURSI", "KURUN", "KURUS", "KURVA", "KUSAM", "KUSEN", "KUSIR", "KUSUT", "KUTIP", "KUTUB", "KUTUK", "LABEL", "LABIL", "LACAK", "LAHAP", "LAHAR", "LAHIR", "LAJUR", "LALAI", "LALAP", "LALAT", "LAMAR", "LAMPU", "LAPAK", "LAPAR", "LAPOR", "LAPUK", "LARIS", "LARON", "LARUT", "LARVA", "LASER", "LATAH", "LATAR", "LATEN", "LATIH", "LAWAN", "LAYAK", "LAYAN", "LAYAR", "LAZIM", "LEBAH", "LEBAM", "LEBAR", "LEBAT", "LEBIH", "LEBUR", "LEDAK", "LEDEK", "LEGAL", "LEGAM", "LEHER", "LEKAS", "LEKAT", "LEKUK", "LELAH", "LELAP", "LELEH", "LELET", "LEMAH", "LEMAK", "LEMAS", "LEMBU", "LEMON", "LEMUR", "LENSA", "LEPAS", "LEPEK", "LETAK", "LETIH", "LEVEL", "LEWAT", "LEZAT", "LIANG", "LIBAT", "LIBRA", "LIBUR", "LICIK", "LICIN", "LIDAH", "LIHAI", "LIHAT", "LILIN", "LILIT", "LIMAS", "LIMAU", "LIMIT", "LIMUN", "LIPID", "LIPIT", "LIPUT", "LIRIH", "LIRIK", "LISAN", "LITER", "LIVER", "LOBAK", "LOGAM", "LOGAT", "LOGIS", "LOKAL", "LOKET", "LOLOS", "LOYAL", "LUANG", "LUDAH", "LUDES", "LUGAS", "LUKIS", "LULUH", "LULUR", "LULUS", "LUMUT", "LUNAK", "LUNAS", "LURAH", "LURUS", "LUSIN", "LUSUH", "LUTUT", "LUWES", "MABUK", "MACAM", "MACAN", "MACET", "MADYA", "MAFIA", "MAGIS", "MAGMA", "MAHAL", "MAHAR", "MAHIR", "MAJAS", "MAKAM", "MAKAN", "MAKET", "MAKIN", "MAKNA", "MAKRO", "MALAH", "MALAM", "MALAS", "MAMPU", "MANDI", "MANIA", "MANIS", "MANJA", "MAPAN", "MARAH", "MARGA", "MARKA", "MASAK", "MASIF", "MASIH", "MASSA", "MASUK", "MATOA", "MAWAR", "MAWAS", "MAYAT", "MEBEL", "MEDAN", "MEDIA", "MEDIK", "MEDIS", "MEGAH", "MEKAR", "MELAR", "MELAS", "MELEK", "MELON", "MEMAR", "MENIT", "MENOR", "MERAH", "MERAK", "MERDU", "MEREK", "MEREM", "MESIN", "MESIU", "MESKI", "MESRA", "MESTI", "METAL", "METER", "METRO", "MEWAH", "MIKRO", "MILIK", "MIMPI", "MINAT", "MINOR", "MINTA", "MINUM", "MINUS", "MIRIP", "MIRIS", "MISAL", "MITOS", "MITRA", "MOBIL", "MOCHI", "MODAL", "MODEL", "MODEM", "MODIS", "MODUL", "MODUS", "MOGOK", "MOHON", "MOLAR", "MOMEN", "MORAL", "MORSE", "MOTEL", "MOTIF", "MOTOR", "MUARA", "MUDAH", "MUDIK", "MUJUR", "MUKIM", "MULAI", "MULAS", "MULIA", "MULUS", "MULUT", "MURAH", "MURAI", "MURAL", "MURAM", "MURID", "MURKA", "MURNI", "MUSIK", "MUSIM", "MUSUH", "MUTAN", "NAJIS", "NAKAL", "NALAR", "NAMUN", "NANAR", "NANAS", "NANTI", "NAPAS", "NASIB", "NATAL", "NAUNG", "NENEK", "NETRA", "NGERI", "NGILU", "NIAGA", "NIFAS", "NIHIL", "NIKAH", "NIKEL", "NILAI", "NILON", "NIPIS", "NISAB", "NISAN", "NOMOR", "NORAK", "NORMA", "NOVEL", "NYALA", "NYALI", "NYATA", "NYAWA", "NYEPI", "NYERI", "NYIUR", "OASIS", "OBENG", "OBJEK", "OBRAL", "OBRAS", "OBROL", "OBYEK", "OKNUM", "OKTAF", "OKTET", "OLENG", "OMBAK", "OMEGA", "OMONG", "OMPOL", "ONCOM", "OPERA", "OPINI", "OPIUM", "OPLOS", "OPTIK", "ORANG", "ORASI", "ORBIT", "ORDER", "ORGAN", "OYONG", "PACAR", "PADAM", "PADAN", "PADAT", "PAGAR", "PAHAM", "PAHAT", "PAHIT", "PAJAK", "PAKAI", "PAKAN", "PAKAR", "PAKDE", "PAKEM", "PAKET", "PAKIS", "PAKSA", "PAKTA", "PALEM", "PALET", "PALSU", "PAMAN", "PAMER", "PAMIT", "PAMOR", "PANAH", "PANAI", "PANAS", "PANCA", "PANCI", "PANCO", "PANDU", "PANEL", "PANEN", "PANIK", "PANIR", "PANJI", "PANTI", "PAPAN", "PAPAR", "PARAH", "PARAS", "PARAU", "PARIT", "PARKA", "PARUH", "PARUT", "PASAK", "PASAL", "PASAR", "PASIF", "PASIR", "PASTA", "PASTI", "PATAH", "PATEN", "PATIN", "PATUH", "PATUK", "PATUT", "PAWAI", "PAYAH", "PAYAU", "PAYET", "PECAH", "PECAT", "PECEL", "PECUT", "PEDAL", "PEDAS", "PEDIH", "PEGAL", "PEGAS", "PEJAL", "PEJAM", "PEKAK", "PEKAN", "PEKAT", "PEKIK", "PELAN", "PELET", "PELIK", "PELIT", "PELUH", "PELUK", "PENAT", "PENUH", "PENYU", "PEPES", "PERAH", "PERAK", "PERAN", "PERAS", "PERCA", "PERDU", "PERGI", "PERIH", "PERLU", "PERON", "PERUT", "PESAN", "PESAT", "PESTA", "PESUT", "PETAI", "PETAK", "PETAL", "PETIK", "PETIR", "PETIS", "PEYEK", "PEYOT", "PIALA", "PIANO", "PIARA", "PIATU", "PIHAK", "PIJAK", "PIJAR", "PIJAT", "PIKAT", "PIKET", "PIKIR", "PIKUL", "PIKUN", "PILAH", "PILAR", "PILEK", "PILIH", "PILIN", "PILOT", "PILUS", "PINTA", "PINTU", "PINUS", "PIPET", "PIPIH", "PIPIL", "PIPIT", "PISAH", "PISAU", "PISIN", "PITAK", "PITAM", "PITON", "PIVOT", "PLANG", "PLANO", "PLAZA", "PLENO", "PLONG", "PLUTO", "POHON", "POJOK", "POKER", "POKOK", "POLAH", "POLES", "POLIO", "POLIP", "POLIS", "POLKA", "POLOS", "POMPA", "PONCO", "POPOK", "POROS", "PORSI", "PREMI", "PRIMA", "PROSA", "PUASA", "PUBER", "PUCAT", "PUCUK", "PUDAR", "PUDEL", "PUING", "PUISI", "PUKAT", "PUKAU", "PUKUL", "PULAS", "PULAU", "PULEN", "PULIH", "PULSA", "PULUH", "PUNAH", "PUNDI", "PUNUK", "PUNYA", "PUPIL", "PUPUK", "PUPUS", "PURBA", "PUSAR", "PUSAT", "PUSPA", "PUTAR", "PUTIH", "PUTIK", "PUTRA", "PUTRI", "PUTUS", "PUYER", "PUYUH", "QURAN", "RABUN", "RACIK", "RACUN", "RADAR", "RADIO", "RAGAM", "RAHIM", "RAJAH", "RAJAM", "RAJIN", "RAJUT", "RAKET", "RAKIT", "RAKSA", "RAKUS", "RALAT", "RAMAH", "RAMAI", "RAMAL", "RAMBU", "RAMES", "RANAH", "RANAI", "RANCU", "RANUM", "RAPAT", "RAPEL", "RAPUH", "RASIO", "RASUK", "RASUL", "RATAP", "RATUS", "RAUNG", "RAWAN", "RAWAT", "RAWIT", "RAWON", "RAYAP", "RAYON", "RAZIA", "REBAH", "REBON", "REBUK", "REBUS", "REBUT", "RECEH", "REDAM", "REDUP", "REHAT", "REKAM", "REKAT", "REKOR", "REMAH", "REMEH", "REMUK", "RENDA", "RENTA", "REPOT", "RESAH", "RESEP", "RESIK", "RESIN", "RESMI", "RESTU", "RETAK", "RETAS", "RETRO", "RETUR", "REUNI", "REWEL", "REZIM", "RIANG", "RIBUT", "RICUH", "RILIS", "RIMBA", "RINAI", "RINDU", "RISAU", "RISET", "RITEL", "RIVAL", "ROBEK", "ROBOH", "ROBOT", "ROKET", "ROKOK", "ROMPI", "RONDA", "RONDE", "ROTAN", "ROYAL", "RUANG", "RUBAH", "RUJAK", "RUJUK", "RUKUN", "RUMAH", "RUMIT", "RUMOR", "RUMPI", "RUMUS", "RUNGU", "RUNUT", "RUSAK", "RUSUH", "RUSUK", "RUTIN", "SABAR", "SABDA", "SABET", "SABIT", "SABTU", "SABUK", "SABUN", "SABUT", "SADAP", "SADAR", "SADIS", "SAHAM", "SAHUR", "SAING", "SAINS", "SAJAK", "SAJEN", "SAKIT", "SAKSI", "SAKTI", "SALAH", "SALAM", "SALAR", "SALDO", "SALEM", "SALEP", "SALIN", "SALJU", "SALON", "SALTO", "SALUR", "SALUT", "SAMAR", "SAMPO", "SANCA", "SANDI", "SARAF", "SARAN", "SARAT", "SASAR", "SATIN", "SATIR", "SATWA", "SAUNA", "SAUNG", "SAWAH", "SAYAP", "SAYAT", "SAYUP", "SAYUR", "SEBAB", "SEBAL", "SEBUT", "SEDAN", "SEDAP", "SEDIA", "SEDIH", "SEDUH", "SEGAN", "SEGAR", "SEGEL", "SEHAT", "SEJAK", "SEJUK", "SEKAP", "SEKAT", "SEKON", "SEKOP", "SEKTE", "SELAI", "SELAM", "SELAT", "SELOP", "SEMAK", "SEMIR", "SEMUA", "SEMUR", "SEMUT", "SENAM", "SENAR", "SENAT", "SENDI", "SENDU", "SENIN", "SENJA", "SEPAK", "SEPAL", "SEPUH", "SERAH", "SERAK", "SERAM", "SERAP", "SERAT", "SERBA", "SERBU", "SEREH", "SEREP", "SERET", "SERTA", "SERUM", "SERUT", "SESAK", "SESAT", "SETAN", "SETIA", "SETIR", "SETOR", "SEWOT", "SIAGA", "SIANG", "SIAPA", "SIBUK", "SIDIK", "SIFAT", "SIGAP", "SIGMA", "SIHIR", "SIKAP", "SIKAT", "SIKSA", "SIKUT", "SILAM", "SILAT", "SILAU", "SILET", "SIMAK", "SINAR", "SINGA", "SINIS", "SIPIL", "SIPIR", "SIPIT", "SIPUT", "SIRAM", "SIRIH", "SIRIK", "SIRIP", "SIRNA", "SIRUP", "SISIK", "SISIR", "SISWA", "SISWI", "SITUS", "SIUNG", "SKALA", "SKEMA", "SKRIP", "SOBAT", "SOBEK", "SOGOK", "SOLAR", "SOLEK", "SOLID", "SONAR", "SONIK", "SOPAN", "SOPIR", "SORAK", "SOROT", "SOSOK", "SPASI", "SPION", "SPONS", "SPORA", "STRES", "STUDI", "SUAKA", "SUAMI", "SUARA", "SUATU", "SUBUH", "SUBUR", "SUDAH", "SUDUT", "SUJUD", "SUKMA", "SUKUN", "SULAM", "SULAP", "SULIT", "SUMBU", "SUMUR", "SUNAH", "SUNYI", "SUPER", "SURAM", "SURAT", "SURGA", "SURUT", "SURYA", "SUSAH", "SUSUN", "SUTRA", "SUWIR", "SYAIR", "TABAH", "TABEL", "TABIR", "TABUR", "TAGIH", "TAHAN", "TAHAP", "TAHUN", "TAJAM", "TAKAR", "TAKSI", "TAKUT", "TAKWA", "TALAS", "TAMAK", "TAMAN", "TAMAT", "TANAH", "TANAM", "TANDA", "TANDU", "TANPA", "TANTE", "TANYA", "TAPIR", "TARAF", "TARIF", "TARIK", "TARUH", "TATAP", "TAWAN", "TAWAR", "TAWAS", "TAWON", "TEBAK", "TEBAL", "TEBAR", "TEBUS", "TEDUH", "TEGAK", "TEGAL", "TEGAR", "TEGAS", "TEGUH", "TEGUK", "TEGUR", "TEKAD", "TEKAN", "TEKUN", "TELAH", "TELAN", "TELAT", "TELER", "TELUK", "TELUR", "TEMAN", "TEMPE", "TEMPO", "TENAR", "TENDA", "TENOR", "TENSI", "TENTU", "TENUN", "TEORI", "TEPAT", "TEPUK", "TERAS", "TERIK", "TERKA", "TEROR", "TERUS", "TESIS", "TETAP", "TETES", "THETA", "TIADA", "TIANG", "TIARA", "TIDAK", "TIDUR", "TIKAR", "TIKET", "TIKUS", "TIMAH", "TIMBA", "TIMUN", "TIMUR", "TINJA", "TINJU", "TINTA", "TIPIS", "TIRAI", "TIRAM", "TIRIS", "TIRTA", "TIRUS", "TITIK", "TITIP", "TOBAT", "TOKEK", "TOKOH", "TOLAK", "TOMAT", "TOPAN", "TOPIK", "TORSI", "TORSO", "TORUS", "TOTAL", "TRANS", "TROLI", "TUANG", "TUBUH", "TUDUH", "TUGAS", "TUHAN", "TUJUH", "TUKAR", "TULAR", "TULEN", "TULIS", "TULUS", "TUMIS", "TUMIT", "TUMOR", "TUMPU", "TUNAI", "TUNAS", "TUNDA", "TUNIK", "TUPAI", "TURIS", "TURUN", "TURUS", "TURUT", "TUSUK", "TUTOR", "TUTUP", "TUTUR", "TUYUL", "UDANG", "UDARA", "UJUNG", "ULAMA", "ULANG", "ULTRA", "ULUNG", "UMPAN", "UMPAT", "UNDUH", "UNDUR", "UNGSI", "UNSUR", "UNTUK", "UPAYA", "UPETI", "USAHA", "USANG", "USTAD", "USUNG", "UTAMA", "UTANG", "UTARA", "VAKUM", "VALID", "VENUS", "VERSI", "VIDEO", "VIRGO", "VIRUS", "VITAL", "VOKAL", "VONIS", "WABAH", "WADAH", "WADUK", "WAHAI", "WAHYU", "WAJAH", "WAJAN", "WAJAR", "WAJIB", "WAJIK", "WAKAF", "WAKIL", "WAKTU", "WALAU", "WALET", "WANGI", "WARAS", "WARGA", "WARIS", "WARNA", "WARTA", "WASIT", "WATAK", "WESEL", "WIJEN", "WINDU", "WISMA", "WUJUD", "YAITU", "YAKIN", "YAKNI", "YATIM", "ZAKAT", "ZAMAN", "ZEBRA", "ZIGOT", "ZIKIR", "ZIRAH", "ZUHUR"
 ];
 
@@ -124,7 +124,8 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
 }
 
 // Men-generate puzzle DENGAN logika kemiripan progresif
-function generatePuzzleData(targetWord, rows = 3) {
+// Menerima parameter array dictionary yang dikompilasi
+function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
     let foundPath = null;
     let foundColors = null;
     let attempts = 0;
@@ -132,7 +133,7 @@ function generatePuzzleData(targetWord, rows = 3) {
     const colors = [];
 
     const wordScores = {};
-    for (let w of DICTIONARY) {
+    for (let w of dict) {
         const guessColors = calculateWordleColors(w, targetWord);
         const score = guessColors.reduce((acc, val) => acc + (val === 'correct' ? 2 : val === 'present' ? 1 : 0), 0);
         wordScores[w] = { score, guessColors };
@@ -146,7 +147,7 @@ function generatePuzzleData(targetWord, rows = 3) {
         else if (rows === 4) idealScore = [1, 3, 5, 7][r];
         else if (rows === 5) idealScore = [0, 2, 4, 6, 8][r];
 
-        let candidates = shuffle([...DICTIONARY]);
+        let candidates = shuffle([...dict]);
         candidates.sort((a, b) => {
             let diffA = Math.abs(wordScores[a].score - idealScore);
             let diffB = Math.abs(wordScores[b].score - idealScore);
@@ -193,13 +194,13 @@ function generatePuzzleData(targetWord, rows = 3) {
     return null;
 }
 
-function findAlternativeWords(targetWord, colorsArray, seenPaths) {
+function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DICTIONARY) {
     const rows = colorsArray.length;
     const targetColorsStr = colorsArray.map(c => c.join(','));
     const candsPerRow = [];
     
     for (let r = 0; r < rows; r++) {
-        const validForColors = DICTIONARY.filter(w => {
+        const validForColors = dict.filter(w => {
             if (w === targetWord) return false;
             return calculateWordleColors(w, targetWord).join(',') === targetColorsStr[r];
         });
@@ -237,13 +238,13 @@ function findAlternativeWords(targetWord, colorsArray, seenPaths) {
     return foundPath;
 }
 
-function getValidLevel(isHardMode = false) {
+function getValidLevel(isHardMode = false, dict = BASE_DICTIONARY) {
    let played = getPlayedWords();
-   let available = DICTIONARY.filter(w => !played.includes(w));
+   let available = dict.filter(w => !played.includes(w));
    
    if (available.length === 0) {
       resetPlayedWords(); 
-      available = [...DICTIONARY];
+      available = [...dict];
       played = [];
    }
 
@@ -252,14 +253,14 @@ function getValidLevel(isHardMode = false) {
 
    for (let target of shuffledAvailable) {
       for(let i=0; i < (isHardMode ? 15 : 5); i++) {
-         let data = generatePuzzleData(target, targetRows);
+         let data = generatePuzzleData(target, targetRows, dict);
          if (data) return { target, colors: data.colors, words: data.words, rows: targetRows, seenPaths: [data.words.join(',')] };
       }
    }
    
    let fallbackRows = isHardMode ? 4 : 2;
    for (let target of shuffledAvailable) {
-      let data = generatePuzzleData(target, fallbackRows);
+      let data = generatePuzzleData(target, fallbackRows, dict);
       if (data) return { target, colors: data.colors, words: data.words, rows: fallbackRows, seenPaths: [data.words.join(',')] };
    }
 
@@ -271,9 +272,9 @@ function getValidLevel(isHardMode = false) {
 const Tile = ({ letter, status, hasError, isActive, onClick, onShowError, size = 'normal' }) => {
   const statusClasses = {
     empty: "bg-white/[0.03] ring-1 ring-inset ring-white/10 text-white shadow-[inset_0_4px_20px_rgba(255,255,255,0.02)]",
-    correct: "bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]",
-    present: "bg-gradient-to-br from-amber-400 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_20px_rgba(245,158,11,0.4)]",
-    absent: "bg-gradient-to-br from-slate-700 to-slate-800 ring-1 ring-inset ring-white/10 text-white/90",
+    correct: "bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-md [text-shadow:_0_2px_4px_rgba(0,0,0,0.4)]",
+    present: "bg-gradient-to-br from-amber-400 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-md [text-shadow:_0_2px_4px_rgba(0,0,0,0.4)]",
+    absent: "bg-gradient-to-br from-slate-700 to-slate-800 ring-1 ring-inset ring-white/10 text-white/90 [text-shadow:_0_2px_4px_rgba(0,0,0,0.4)]",
   };
 
   const sizeClasses = {
@@ -285,7 +286,7 @@ const Tile = ({ letter, status, hasError, isActive, onClick, onShowError, size =
     <div 
       onClick={onClick}
       className={`
-        flex items-center justify-center font-bold uppercase transition-all duration-300 relative cursor-pointer
+        flex items-center justify-center font-extrabold uppercase transition-all duration-300 relative cursor-pointer
         ${sizeClasses[size]}
         ${statusClasses[status || 'empty']}
         ${isActive ? 'ring-4 ring-indigo-400/50 scale-105 z-10' : ''}
@@ -494,6 +495,9 @@ const Confetti = React.memo(() => {
 
 // --- KOMPONEN UTAMA (APP) ---
 export default function App() {
+  const [dictionary, setDictionary] = useState([]);
+  const [isDictLoaded, setIsDictLoaded] = useState(false);
+
   const [showInstructions, setShowInstructions] = useState(() => getPlayedWords().length === 0);
   const [isHardMode, setIsHardMode] = useState(false);
   const [puzzle, setPuzzle] = useState(null); 
@@ -502,8 +506,38 @@ export default function App() {
   const [activeCell, setActiveCell] = useState({ r: 0, c: 0 });
   const [gameState, setGameState] = useState('loading');
   const [toastMsg, setToastMsg] = useState('');
-  const [progress, setProgress] = useState({ current: 0, total: DICTIONARY.length });
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Efek memuat data kamus dari public/kamus_tambahan.txt
+  useEffect(() => {
+    const fetchDictionary = async () => {
+      try {
+        const response = await fetch('/kamus_tambahan.txt');
+        if (response.ok) {
+          const text = await response.text();
+          // Memecah berdasarkan baris baru, menghapus spasi, pastikan panjangnya 5, dan buat huruf kapital
+          const extraWords = text.split(/\r?\n/)
+            .map(w => w.trim().toUpperCase())
+            .filter(w => w.length === 5);
+            
+          // Gabungkan dengan BASE_DICTIONARY dan hapus kata duplikat menggunakan Set
+          const combinedDictionary = Array.from(new Set([...BASE_DICTIONARY, ...extraWords]));
+          setDictionary(combinedDictionary);
+        } else {
+          console.warn("Gagal memuat kamus_tambahan.txt, kembali menggunakan kamus dasar.");
+          setDictionary(BASE_DICTIONARY);
+        }
+      } catch (error) {
+        console.warn("Error jaringan saat memuat kamus_tambahan.txt, kembali menggunakan kamus dasar.");
+        setDictionary(BASE_DICTIONARY);
+      } finally {
+        setIsDictLoaded(true);
+      }
+    };
+
+    fetchDictionary();
+  }, []);
 
   const keyStatuses = useMemo(() => {
     if (!puzzle) return {};
@@ -548,19 +582,25 @@ export default function App() {
     }
   }, []);
 
+  // Mulai level sekarang perlu memastikan dictionary sudah termuat (isDictLoaded)
   const startNextLevel = useCallback(() => {
-    const newLvl = getValidLevel(isHardMode);
+    if (!isDictLoaded || dictionary.length === 0) return;
+
+    const newLvl = getValidLevel(isHardMode, dictionary);
     setPuzzle(newLvl);
     setGrid(Array(newLvl.rows).fill('').map(() => Array(5).fill('')));
     setErrors(Array(newLvl.rows).fill('').map(() => Array(5).fill(null)));
     setActiveCell({ r: 0, c: 0 });
-    setProgress({ current: getPlayedWords().length, total: DICTIONARY.length });
+    setProgress({ current: getPlayedWords().length, total: dictionary.length });
     setGameState('playing');
-  }, [isHardMode]);
+  }, [isHardMode, isDictLoaded, dictionary]);
 
+  // Efek inisiasi pertama kali game hanya ketika kamus telah siap
   useEffect(() => {
-     startNextLevel();
-  }, [startNextLevel]);
+     if (isDictLoaded && !puzzle) {
+        startNextLevel();
+     }
+  }, [isDictLoaded, puzzle, startNextLevel]);
 
   const handleSolve = useCallback(() => {
     if (!puzzle || !puzzle.words) return;
@@ -570,7 +610,7 @@ export default function App() {
 
   const handleAlternative = useCallback(() => {
     if (!puzzle) return;
-    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths);
+    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, dictionary);
     
     if (newWords) {
         setPuzzle(prev => ({ 
@@ -583,7 +623,7 @@ export default function App() {
     } else {
         showToast("Tidak ada alternatif kombinasi logis lainnya untuk pola warna ini di dalam kamus.");
     }
-  }, [puzzle]);
+  }, [puzzle, dictionary]);
 
   const validateGrid = useCallback(() => {
     if (!puzzle) return;
@@ -614,7 +654,8 @@ export default function App() {
       }
 
       if (word) {
-        if (!DICTIONARY.includes(word)) {
+        // Validasi menggunakan dictionary yang memuat ekstensi .txt
+        if (!dictionary.includes(word)) {
           newErrors[r].fill("Bukan kata dalam kamus bahasa Indonesia.");
           isWin = false;
           continue; 
@@ -649,11 +690,11 @@ export default function App() {
     if (isWin && !anyEmpty && gameState !== 'won') {
       setGameState('won');
       addPlayedWord(puzzle.target);
-      setProgress({ current: getPlayedWords().length, total: DICTIONARY.length });
+      setProgress({ current: getPlayedWords().length, total: dictionary.length });
     } else if ((!isWin || anyEmpty) && gameState === 'won') {
       setGameState('playing'); 
     }
-  }, [grid, puzzle, gameState]);
+  }, [grid, puzzle, gameState, dictionary]);
 
   useEffect(() => {
     validateGrid();
@@ -712,10 +753,11 @@ export default function App() {
     ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
   ];
 
-  if (!puzzle) {
+  if (!puzzle || !isDictLoaded) {
     return (
       <div className="h-[100dvh] w-full bg-[#050505] flex items-center justify-center font-sans">
         <RefreshCw className="w-10 h-10 text-indigo-500 animate-spin" />
+        <p className="absolute mt-20 text-slate-500 text-sm animate-pulse">Memuat Kamus Kata...</p>
       </div>
     );
   }
@@ -750,13 +792,9 @@ export default function App() {
       <header className="w-full max-w-lg flex flex-shrink-0 items-center justify-between z-10 pb-2 sm:pb-3 mt-1 sm:mt-2">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400 tracking-tight">
-              UNWORDLE
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider drop-shadow-md">
+              KEBOLAK
             </h1>
-            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full overflow-hidden flex flex-col border border-white/20 shadow-sm shrink-0" title="Bahasa Indonesia">
-              <div className="w-full h-1/2 bg-red-600"></div>
-              <div className="w-full h-1/2 bg-white"></div>
-            </div>
           </div>
           <div className="w-px h-4 bg-white/10 hidden sm:block"></div>
           <p className="text-slate-400 text-xs hidden sm:block">
@@ -846,7 +884,7 @@ export default function App() {
 
             <div className="flex w-full gap-1.5 sm:gap-2 opacity-95">
               {puzzle.target.split('').map((letter, i) => (
-                <div key={i} className="w-full aspect-square flex items-center justify-center font-bold text-2xl sm:text-3xl md:text-4xl uppercase rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 ring-1 ring-inset ring-white/40 text-white shadow-[0_8px_30px_rgba(16,185,129,0.3)] pointer-events-none">
+                <div key={i} className="w-full aspect-square flex items-center justify-center font-extrabold text-2xl sm:text-3xl md:text-4xl uppercase rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 ring-1 ring-inset ring-white/40 text-white shadow-md pointer-events-none [text-shadow:_0_2px_4px_rgba(0,0,0,0.4)]">
                   {letter}
                 </div>
               ))}
@@ -873,7 +911,6 @@ export default function App() {
 
         </main>
 
-        {/* Dihapus class 'animate-in' yang memicu kedipan saat komponen re-render akibat Alternatif Jawaban */}
         {gameState === 'won' ? (
           <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-2 sm:gap-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
             
@@ -911,19 +948,19 @@ export default function App() {
                   const isAction = key === 'ENTER' || key === 'BACKSPACE';
                   const status = keyStatuses[key];
                   
-                  let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-md backdrop-blur-md';
-                  if (status === 'correct') keyStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:brightness-110';
-                  else if (status === 'present') keyStyle = 'bg-gradient-to-br from-amber-500 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:brightness-110';
-                  else if (status === 'absent') keyStyle = 'bg-gradient-to-br from-slate-800 to-slate-900 ring-1 ring-inset ring-white/5 text-white/40 shadow-inner';
+                  let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-sm backdrop-blur-md';
+                  if (status === 'correct') keyStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-sm hover:brightness-110 [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
+                  else if (status === 'present') keyStyle = 'bg-gradient-to-br from-amber-500 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-sm hover:brightness-110 [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
+                  else if (status === 'absent') keyStyle = 'bg-gradient-to-br from-slate-800 to-slate-900 ring-1 ring-inset ring-white/5 text-white/40 shadow-inner [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
 
                   return (
                     <button
                       key={key}
                       onClick={() => handleInput(key)}
                       className={`
-                        flex items-center justify-center font-bold rounded-xl transition-all active:scale-90
-                        ${isAction ? 'flex-[1.5] text-[10px] sm:text-xs bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white backdrop-blur-md' 
-                                   : `flex-1 text-sm sm:text-base ${keyStyle}`}
+                        flex items-center justify-center rounded-xl transition-all active:scale-90
+                        ${isAction ? 'flex-[1.5] text-[10px] sm:text-xs font-bold bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white backdrop-blur-md' 
+                                   : `flex-1 text-sm sm:text-base font-extrabold ${keyStyle}`}
                         h-12 sm:h-14
                       `}
                     >
