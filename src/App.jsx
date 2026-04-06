@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Delete, Trophy, RefreshCw, XCircle, Info, X, ChevronRight, ChevronLeft, Maximize, Minimize } from 'lucide-react';
 
 // --- KAMUS KATA DASAR (Fallback jika txt tidak ada) ---
@@ -124,7 +124,6 @@ function checkHardModeValidity(word, prevWords, prevColorsArray) {
 }
 
 // Men-generate puzzle DENGAN logika kemiripan progresif
-// Menerima parameter array dictionary yang dikompilasi
 function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
     let foundPath = null;
     let foundColors = null;
@@ -194,7 +193,7 @@ function generatePuzzleData(targetWord, rows = 3, dict = BASE_DICTIONARY) {
     return null;
 }
 
-function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DICTIONARY) {
+function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DICTIONARY, isHardMode = false) {
     const rows = colorsArray.length;
     const targetColorsStr = colorsArray.map(c => c.join(','));
     const candsPerRow = [];
@@ -224,7 +223,7 @@ function findAlternativeWords(targetWord, colorsArray, seenPaths, dict = BASE_DI
             attempts++;
             if (currentPath.includes(word)) continue; 
             
-            if (r > 0) {
+            if (r > 0 && isHardMode) {
                 const hmCheck = checkHardModeValidity(word, currentPath, colorsArray.slice(0, r));
                 if (!hmCheck.valid) continue;
             }
@@ -509,6 +508,9 @@ export default function App() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // useRef untuk mengatasi bug toast menghilang cepat
+  const toastTimerRef = useRef(null);
+
   // Efek memuat data kamus dari public/kamus_tambahan.txt
   useEffect(() => {
     const fetchDictionary = async () => {
@@ -516,12 +518,10 @@ export default function App() {
         const response = await fetch('/kamus_tambahan.txt');
         if (response.ok) {
           const text = await response.text();
-          // Memecah berdasarkan baris baru, menghapus spasi, pastikan panjangnya 5, dan buat huruf kapital
           const extraWords = text.split(/\r?\n/)
             .map(w => w.trim().toUpperCase())
             .filter(w => w.length === 5);
             
-          // Gabungkan dengan BASE_DICTIONARY dan hapus kata duplikat menggunakan Set
           const combinedDictionary = Array.from(new Set([...BASE_DICTIONARY, ...extraWords]));
           setDictionary(combinedDictionary);
         } else {
@@ -582,11 +582,13 @@ export default function App() {
     }
   }, []);
 
-  // Mulai level sekarang perlu memastikan dictionary sudah termuat (isDictLoaded)
-  const startNextLevel = useCallback(() => {
+  const startNextLevel = useCallback((modeOverride) => {
     if (!isDictLoaded || dictionary.length === 0) return;
 
-    const newLvl = getValidLevel(isHardMode, dictionary);
+    // Memastikan mode yang digunakan adalah mode yang baru ditekan, atau fallback ke state saat ini
+    const activeMode = typeof modeOverride === 'boolean' ? modeOverride : isHardMode;
+
+    const newLvl = getValidLevel(activeMode, dictionary);
     setPuzzle(newLvl);
     setGrid(Array(newLvl.rows).fill('').map(() => Array(5).fill('')));
     setErrors(Array(newLvl.rows).fill('').map(() => Array(5).fill(null)));
@@ -595,7 +597,6 @@ export default function App() {
     setGameState('playing');
   }, [isHardMode, isDictLoaded, dictionary]);
 
-  // Efek inisiasi pertama kali game hanya ketika kamus telah siap
   useEffect(() => {
      if (isDictLoaded && !puzzle) {
         startNextLevel();
@@ -608,9 +609,10 @@ export default function App() {
     setErrors(Array(puzzle.rows).fill('').map(() => Array(5).fill(null)));
   }, [puzzle]);
 
+  // Bug fix: Mem-passing isHardMode agar alternatif mengikuti mode yang sedang aktif
   const handleAlternative = useCallback(() => {
     if (!puzzle) return;
-    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, dictionary);
+    const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, dictionary, isHardMode);
     
     if (newWords) {
         setPuzzle(prev => ({ 
@@ -623,7 +625,7 @@ export default function App() {
     } else {
         showToast("Tidak ada alternatif kombinasi logis lainnya untuk pola warna ini di dalam kamus.");
     }
-  }, [puzzle, dictionary]);
+  }, [puzzle, dictionary, isHardMode]);
 
   const validateGrid = useCallback(() => {
     if (!puzzle) return;
@@ -654,7 +656,6 @@ export default function App() {
       }
 
       if (word) {
-        // Validasi menggunakan dictionary yang memuat ekstensi .txt
         if (!dictionary.includes(word)) {
           newErrors[r].fill("Bukan kata dalam kamus bahasa Indonesia.");
           isWin = false;
@@ -669,7 +670,8 @@ export default function App() {
           }
         }
 
-        if (r > 0) {
+        // Bug fix: Hard Mode kini HANYA aktif mengeksekusi aturannya jika tombol berada di mode Hard
+        if (r > 0 && isHardMode) {
           const hmCheck = checkHardModeValidity(word, currentWords.slice(0, r), puzzle.colors.slice(0, r));
           if (!hmCheck.valid) {
               for (let c = 0; c < 5; c++) {
@@ -694,16 +696,17 @@ export default function App() {
     } else if ((!isWin || anyEmpty) && gameState === 'won') {
       setGameState('playing'); 
     }
-  }, [grid, puzzle, gameState, dictionary]);
+  }, [grid, puzzle, gameState, dictionary, isHardMode]);
 
   useEffect(() => {
     validateGrid();
   }, [grid, validateGrid]);
 
-  const showToast = (msg) => {
+  const showToast = useCallback((msg) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 4000);
-  };
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMsg(''), 4000);
+  }, []);
 
   const handleInput = useCallback((key) => {
     if (gameState === 'won' || gameState === 'loading') return;
@@ -720,6 +723,18 @@ export default function App() {
           setActiveCell({ r, c: c - 1 });
         }
         return newGrid;
+      }
+
+      // Bug Fix: 'ENTER' kini berguna untuk melompat otomatis ke baris kosong selanjutnya
+      if (key === 'ENTER') {
+        for (let i = 0; i < puzzle.rows; i++) {
+          const emptyCol = newGrid[i].indexOf('');
+          if (emptyCol !== -1) {
+            setActiveCell({ r: i, c: emptyCol });
+            break;
+          }
+        }
+        return prev;
       }
 
       if (/^[A-Z]$/.test(key)) {
@@ -740,6 +755,7 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Backspace') handleInput('BACKSPACE');
+      if (e.key === 'Enter') handleInput('ENTER');
       const char = e.key.toUpperCase();
       if (/^[A-Z]$/.test(char) && char.length === 1) handleInput(char);
     };
@@ -847,17 +863,35 @@ export default function App() {
           </div>
 
           <div className="flex items-center justify-center gap-3 mb-2 w-full">
-            <span className={`text-xs sm:text-sm transition-colors ${!isHardMode ? 'text-emerald-400 font-bold' : 'text-slate-500'}`}>
+            <span 
+              onClick={() => { 
+                if(isHardMode) { 
+                  setIsHardMode(false); 
+                  startNextLevel(false); 
+                } 
+              }}
+              className={`cursor-pointer text-xs sm:text-sm transition-colors ${!isHardMode ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-white'}`}>
               Normal
             </span>
             <button
-              onClick={() => setIsHardMode(!isHardMode)}
+              onClick={() => {
+                const nextMode = !isHardMode;
+                setIsHardMode(nextMode);
+                startNextLevel(nextMode); // Langsung buat level tanpa null-ing puzzle
+              }}
               className="w-12 h-6 sm:w-14 sm:h-7 rounded-full bg-white/5 ring-1 ring-inset ring-white/10 relative transition-all focus:outline-none hover:bg-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]"
               title={isHardMode ? "Kembali ke Normal" : "Aktifkan Hard Mode"}
             >
               <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full absolute top-1 sm:top-0.5 transition-all duration-300 shadow-md ${isHardMode ? 'left-[26px] sm:left-[32px] bg-rose-400' : 'left-1 bg-emerald-400'}`}></div>
             </button>
-            <span className={`text-xs sm:text-sm transition-colors ${isHardMode ? 'text-rose-400 font-bold' : 'text-slate-500'}`}>
+            <span 
+              onClick={() => { 
+                if(!isHardMode) { 
+                  setIsHardMode(true); 
+                  startNextLevel(true); 
+                } 
+              }}
+              className={`cursor-pointer text-xs sm:text-sm transition-colors ${isHardMode ? 'text-rose-400 font-bold' : 'text-slate-500 hover:text-white'}`}>
               Hard Mode
             </span>
           </div>
@@ -948,7 +982,7 @@ export default function App() {
                   const isAction = key === 'ENTER' || key === 'BACKSPACE';
                   const status = keyStatuses[key];
                   
-                  let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-sm backdrop-blur-md';
+                  let keyStyle = 'bg-white/5 ring-1 ring-inset ring-white/10 hover:bg-white/15 text-slate-200 shadow-md backdrop-blur-md';
                   if (status === 'correct') keyStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 ring-1 ring-inset ring-white/30 text-white shadow-sm hover:brightness-110 [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
                   else if (status === 'present') keyStyle = 'bg-gradient-to-br from-amber-500 to-amber-600 ring-1 ring-inset ring-white/30 text-white shadow-sm hover:brightness-110 [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
                   else if (status === 'absent') keyStyle = 'bg-gradient-to-br from-slate-800 to-slate-900 ring-1 ring-inset ring-white/5 text-white/40 shadow-inner [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)]';
