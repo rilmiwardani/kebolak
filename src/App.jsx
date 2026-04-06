@@ -508,10 +508,8 @@ export default function App() {
   const [progress, setProgress] = useState({ current: 0, total: BASE_DICTIONARY.length });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // useRef untuk mengatasi bug toast menghilang cepat
   const toastTimerRef = useRef(null);
 
-  // Efek memuat data kamus dari public/kamus_tambahan.txt
   useEffect(() => {
     const fetchDictionary = async () => {
       try {
@@ -585,10 +583,8 @@ export default function App() {
   const startNextLevel = useCallback((modeOverride) => {
     if (!isDictLoaded || dictionary.length === 0) return;
 
-    // Memastikan mode yang digunakan adalah mode yang baru ditekan, atau fallback ke state saat ini
     const activeMode = typeof modeOverride === 'boolean' ? modeOverride : isHardMode;
 
-    // HANYA gunakan BASE_DICTIONARY untuk membuat target dan susunan puzzle grid
     const newLvl = getValidLevel(activeMode, BASE_DICTIONARY);
     setPuzzle(newLvl);
     setGrid(Array(newLvl.rows).fill('').map(() => Array(5).fill('')));
@@ -610,7 +606,6 @@ export default function App() {
     setErrors(Array(puzzle.rows).fill('').map(() => Array(5).fill(null)));
   }, [puzzle]);
 
-  // Gunakan BASE_DICTIONARY untuk alternatif susunan
   const handleAlternative = useCallback(() => {
     if (!puzzle) return;
     const newWords = findAlternativeWords(puzzle.target, puzzle.colors, puzzle.seenPaths, BASE_DICTIONARY, isHardMode);
@@ -657,7 +652,6 @@ export default function App() {
       }
 
       if (word) {
-        // Validasi menggunakan dictionary gabungan (BASE + txt) untuk membolehkan input pengguna
         if (!dictionary.includes(word)) {
           newErrors[r].fill("Bukan kata dalam kamus bahasa Indonesia.");
           isWin = false;
@@ -672,7 +666,6 @@ export default function App() {
           }
         }
 
-        // Hard Mode aturannya
         if (r > 0 && isHardMode) {
           const hmCheck = checkHardModeValidity(word, currentWords.slice(0, r), puzzle.colors.slice(0, r));
           if (!hmCheck.valid) {
@@ -782,7 +775,6 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-start pt-3 pb-8 sm:pt-5 sm:pb-10 px-2 sm:px-4 font-sans relative overflow-hidden select-none">
       
-      {/* Memisahkan tag Style global agar tidak di-re-render dan mengulang animasi */}
       <style>{`
         @keyframes confetti-burst {
           0% {
@@ -802,7 +794,6 @@ export default function App() {
         }
       `}</style>
 
-      {/* Background Orbs yang lebih dinamis dan imersif */}
       <div className="absolute top-[-15%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/15 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[-15%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[140px] mix-blend-screen pointer-events-none"></div>
 
@@ -878,7 +869,7 @@ export default function App() {
               onClick={() => {
                 const nextMode = !isHardMode;
                 setIsHardMode(nextMode);
-                startNextLevel(nextMode); // Langsung buat level tanpa null-ing puzzle
+                startNextLevel(nextMode);
               }}
               className="w-12 h-6 sm:w-14 sm:h-7 rounded-full bg-white/5 ring-1 ring-inset ring-white/10 relative transition-all focus:outline-none hover:bg-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]"
               title={isHardMode ? "Kembali ke Normal" : "Aktifkan Hard Mode"}
@@ -947,26 +938,25 @@ export default function App() {
         </main>
 
         {gameState === 'won' ? (
-          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-3 sm:gap-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
+          <div className="w-full max-w-lg mt-6 sm:mt-8 mb-auto flex flex-col items-center justify-center gap-3 sm:gap-4 bg-white/[0.02] backdrop-blur-2xl ring-1 ring-inset ring-white/10 p-4 sm:p-6 md:p-8 rounded-[2.5rem] shadow-2xl relative z-50 shrink-0">
             
             <Confetti key={progress.current} />
 
-            <div className="text-center z-10">
+            <div className="text-center z-10 pt-2">
                <h2 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200 mb-1">Selamat!</h2>
                <p className="text-slate-300 text-xs sm:text-sm">Anda berhasil memecahkan teka-teki.</p>
             </div>
             
-            {/* Tombol diubah menjadi flex-row (horizontal) agar menjadi 2 kolom di mobile */}
             <div className="flex flex-row gap-2 sm:gap-3 w-full z-10 mt-1">
               <button 
                 onClick={handleAlternative}
-                className="px-2 py-2.5 sm:px-6 sm:py-3 bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white text-[11px] sm:text-sm font-medium rounded-full transition-all active:scale-95 flex-1 whitespace-nowrap"
+                className="flex-1 px-2 py-2.5 sm:px-6 sm:py-3 bg-white/10 ring-1 ring-inset ring-white/10 hover:bg-white/20 text-white text-[11px] sm:text-sm font-medium rounded-full transition-all active:scale-95 whitespace-nowrap"
               >
                 Alternatif Jawaban
               </button>
               <button 
                 onClick={startNextLevel}
-                className="px-2 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 hover:brightness-110 text-white text-[11px] sm:text-sm font-bold rounded-full shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)] transition-all active:scale-95 flex-1 whitespace-nowrap"
+                className="flex-1 px-2 py-2.5 sm:px-6 sm:py-3 bg-gradient-to-br from-emerald-400 to-emerald-600 ring-1 ring-inset ring-white/30 hover:brightness-110 text-white text-[11px] sm:text-sm font-bold rounded-full shadow-md transition-all active:scale-95 whitespace-nowrap"
               >
                 Main Lagi
               </button>
